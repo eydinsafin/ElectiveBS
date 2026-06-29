@@ -1,25 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronLeft, Star, AlertTriangle, MapPin, Check } from 'lucide-react'
+import { ChevronLeft, AlertTriangle, MapPin, Check } from 'lucide-react'
 import Avatar from '../components/Avatar'
 
-const roles = [
-  { label: 'Promoters', filled: 4, total: 12 },
-  { label: 'Supervisors', filled: 1, total: 2 },
-  { label: 'Media', filled: 0, total: 1 },
-]
-
-const staff = [
-  { name: 'Sarah Jenkins', role: 'Lead Promoter', rate: '$18/hr', rating: 4.9, events: 47, distance: '0.2km', conflict: null },
-  { name: 'Marcus Low',    role: 'Promoter',      rate: '$15/hr', rating: 4.7, events: 23, distance: '0.8km', conflict: null },
-  { name: 'Aria Gupta',    role: 'Promoter',      rate: '$15/hr', rating: 4.5, events: 18, distance: '1.2km', conflict: 'BMW Roadshow' },
-  { name: 'James Wilson',  role: 'Promoter',      rate: '$16/hr', rating: 4.8, events: 35, distance: '1.5km', conflict: null },
-]
+const roles: { label: string; filled: number; total: number }[] = []
+const staff: { name: string; role: string; rate: string; events: number; distance: string; conflict: string | null }[] = []
 
 export default function StaffAssignment() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'available' | 'busy'>('available')
-  const [selected, setSelected] = useState<Set<string>>(new Set(['Sarah Jenkins', 'Marcus Low', 'James Wilson']))
+  const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const toggle = (name: string) =>
     setSelected(prev => {
@@ -37,7 +27,7 @@ export default function StaffAssignment() {
         </button>
         <div>
           <h1 className="text-lg font-semibold text-white">Staff Assignment</h1>
-          <p className="text-zinc-500 text-xs mt-0.5">Nike Product Launch</p>
+          <p className="text-zinc-500 text-xs mt-0.5">Select an event</p>
         </div>
       </div>
 
@@ -81,6 +71,9 @@ export default function StaffAssignment() {
 
       {/* Staff cards */}
       <div className="px-5 space-y-3">
+        {staff.length === 0 && (
+          <p className="text-center text-zinc-500 text-sm py-10">No staff available.</p>
+        )}
         {staff.map(m => {
           const isSelected = selected.has(m.name)
           return (
@@ -107,10 +100,6 @@ export default function StaffAssignment() {
                   </div>
                   <p className="text-zinc-400 text-xs mb-2">{m.role}</p>
                   <div className="flex items-center gap-4 text-xs text-zinc-500">
-                    <span className="flex items-center gap-1">
-                      <Star size={11} className="text-yellow-400 fill-yellow-400" />
-                      {m.rating}
-                    </span>
                     <span>{m.events} events</span>
                     <span className="flex items-center gap-1">
                       <MapPin size={11} />

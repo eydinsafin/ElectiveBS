@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { DollarSign, Users, Star, Activity, ChevronDown, Plus } from 'lucide-react'
+import { DollarSign, Users, Activity, ChevronDown, Plus } from 'lucide-react'
 
 // ---------- Chart helpers ----------
 const WEEKS = ['Week 1', 'Week 2', 'Week 3', 'Week 4']
@@ -85,16 +85,10 @@ function DonutChart() {
 const kpis = [
   { label: 'Total Revenue',      value: '$84,240', badge: '+12.5%',  badgeOk: true,  sub: 'vs last month',    Icon: DollarSign, cls: 'text-emerald-600 bg-emerald-50' },
   { label: 'Staff Utilization',  value: '92.4%',   badge: 'Optimal', badgeOk: true,  sub: '342 / 370 active', Icon: Users,      cls: 'text-blue-600 bg-blue-50' },
-  { label: 'Avg Event Rating',   value: '4.8 / 5', badge: 'High',    badgeOk: true,  sub: '24 reviews',       Icon: Star,       cls: 'text-amber-600 bg-amber-50' },
   { label: 'Payroll Processing', value: '$12,410', badge: 'Pending', badgeOk: false, sub: '42 recipients',    Icon: Activity,   cls: 'text-orange-600 bg-orange-50' },
 ]
 
-const eventsTable = [
-  { name: 'Nike Product Launch', staffing: 84, revenue: '$12,400', rating: 4.9, status: 'On Track' },
-  { name: 'BMW Roadshow',        staffing: 40, revenue: '$4,200',  rating: 4.7, status: 'Critical' },
-  { name: 'Tech Summit 2023',    staffing: 90, revenue: '$18,900', rating: 4.5, status: 'On Track' },
-  { name: 'City Music Festival', staffing: 60, revenue: '$8,400',  rating: 4.8, status: 'Filling' },
-]
+const eventsTable: { name: string; staffing: number; revenue: string; status: string }[] = []
 
 const STATUS_BADGE: Record<string, string> = {
   'On Track': 'bg-emerald-100 text-emerald-700',
@@ -190,7 +184,7 @@ export default function ReportsAnalytics() {
           <table className="w-full min-w-[480px]">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100">
-                {['Event Name', 'Staffing', 'Revenue', 'Rating', 'Status'].map((col, i) => (
+                {['Event Name', 'Staffing', 'Revenue', 'Status'].map((col, i) => (
                   <th key={col} className={`px-4 md:px-6 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider ${i === 0 ? 'text-left' : 'text-center'}`}>
                     {col}
                   </th>
@@ -198,6 +192,9 @@ export default function ReportsAnalytics() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
+              {eventsTable.length === 0 && (
+                <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-slate-400">No event data available yet.</td></tr>
+              )}
               {eventsTable.map(ev => (
                 <tr key={ev.name} className="hover:bg-slate-50 transition-colors">
                   <td className="px-4 md:px-6 py-4 text-sm font-semibold text-slate-900 whitespace-nowrap">{ev.name}</td>
@@ -210,9 +207,6 @@ export default function ReportsAnalytics() {
                     </div>
                   </td>
                   <td className="px-4 md:px-6 py-4 text-sm font-semibold text-slate-900 text-center font-mono">{ev.revenue}</td>
-                  <td className="px-4 md:px-6 py-4 text-center">
-                    <span className="text-sm font-bold text-amber-600">{ev.rating} ★</span>
-                  </td>
                   <td className="px-4 md:px-6 py-4 text-center">
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_BADGE[ev.status]}`}>{ev.status}</span>
                   </td>

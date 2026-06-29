@@ -1,40 +1,20 @@
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, CheckCircle, AlertTriangle, Clock } from 'lucide-react'
-
-const events = [
-  { id: '1', name: 'Nike Product Launch', date: 'Oct 24', venue: 'Grand Convention Hall', status: 'On Track', filled: 42, total: 50 },
-  { id: '2', name: 'BMW Roadshow',        date: 'Oct 26', venue: 'City Auto Center',      status: 'Critical', filled: 8,  total: 20 },
-  { id: '3', name: 'Tech Summit 2023',    date: 'Oct 28', venue: 'Innovation Hub',        status: 'Planning', filled: 45, total: 50 },
-  { id: '4', name: 'City Music Festival', date: 'Nov 2',  venue: 'Central Park',          status: 'Filling',  filled: 18, total: 30 },
-]
+import { useEvents, fmtDate, fmtTime, STATUS_BADGE, PROGRESS_BAR } from '../context/EventsContext'
 
 const payrollItems = [
-  { label: 'Verified Payouts', value: '$8,240' },
-  { label: 'Staff Claims',     value: '$1,420' },
-  { label: 'Management Fee',   value: '$2,820' },
+  { label: 'Verified Payouts', value: '$0.00' },
+  { label: 'Staff Claims',     value: '$0.00' },
+  { label: 'Management Fee',   value: '$0.00' },
 ]
-
-const timeline = [
-  { code: 'OCT 24', name: 'Nike Product Launch', note: 'On track · 42/50 confirmed',    status: 'ok' },
-  { code: 'OCT 28', name: 'BMW Roadshow',        note: 'Urgent staffing needed · 8/20', status: 'urgent' },
-  { code: 'NOV 02', name: 'City Music Festival', note: 'Planning phase · 18/30 staff',  status: 'planning' },
-]
-
-const STATUS_BADGE: Record<string, string> = {
-  'On Track': 'bg-emerald-100 text-emerald-700',
-  'Critical': 'bg-red-100 text-red-700',
-  'Filling':  'bg-amber-100 text-amber-700',
-  'Planning': 'bg-blue-100 text-blue-700',
-}
-const PROGRESS_BAR: Record<string, string> = {
-  'On Track': 'bg-emerald-500',
-  'Critical': 'bg-red-500',
-  'Filling':  'bg-amber-500',
-  'Planning': 'bg-blue-500',
-}
 
 export default function AgencyDashboard() {
   const navigate = useNavigate()
+  const { events } = useEvents()
+
+  const upcoming = [...events]
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 5)
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px]">
@@ -45,12 +25,8 @@ export default function AgencyDashboard() {
           <p className="text-slate-500 text-sm mt-1">Real-time insights into active events and operations</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => navigate('/schedule')} className="px-3 md:px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">
-            Schedule
-          </button>
-          <button onClick={() => navigate('/events/create')} className="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-600/20">
-            Create Event
-          </button>
+          <button onClick={() => navigate('/schedule')} className="px-3 md:px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">Schedule</button>
+          <button onClick={() => navigate('/events/create')} className="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-600/20">Create Event</button>
         </div>
       </div>
 
@@ -60,13 +36,13 @@ export default function AgencyDashboard() {
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200">
           <div className="px-4 md:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 className="font-semibold text-slate-900">Active Operations</h2>
-            <button className="text-sm text-blue-600 font-medium flex items-center gap-1">
-              View All <ChevronRight size={14} />
-            </button>
+            <button onClick={() => navigate('/events')} className="text-sm text-blue-600 font-medium flex items-center gap-1">View All <ChevronRight size={14} /></button>
           </div>
           <div className="divide-y divide-slate-100">
-            {events.map(ev => {
-              const pct = Math.round((ev.filled / ev.total) * 100)
+            {events.length === 0 ? (
+              <p className="px-6 py-10 text-center text-sm text-slate-400">No active operations. Create an event to get started.</p>
+            ) : events.map(ev => {
+              const pct = ev.total > 0 ? Math.round((ev.filled / ev.total) * 100) : 0
               return (
                 <button key={ev.id} onClick={() => navigate(`/events/${ev.id}`)} className="w-full px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 md:gap-5 hover:bg-slate-50 transition-colors text-left">
                   <div className="flex-1 min-w-0">
@@ -74,7 +50,7 @@ export default function AgencyDashboard() {
                       <p className="font-semibold text-slate-900 text-sm">{ev.name}</p>
                       <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${STATUS_BADGE[ev.status]}`}>{ev.status}</span>
                     </div>
-                    <p className="text-slate-400 text-xs">{ev.date} · {ev.venue}</p>
+                    <p className="text-slate-400 text-xs">{fmtDate(ev.date)} · {ev.location}</p>
                   </div>
                   <div className="w-32 md:w-48 shrink-0">
                     <div className="flex justify-between text-xs mb-1.5">
@@ -99,7 +75,7 @@ export default function AgencyDashboard() {
           </div>
           <div className="p-5 flex-1">
             <p className="text-slate-400 text-xs mb-1">Pending Total</p>
-            <p className="text-2xl md:text-3xl font-bold text-slate-900 mb-5">$12,480.00</p>
+            <p className="text-2xl md:text-3xl font-bold text-slate-900 mb-5">$0.00</p>
             <div className="space-y-3">
               {payrollItems.map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-center">
@@ -121,28 +97,38 @@ export default function AgencyDashboard() {
       {/* Timeline */}
       <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
         <h2 className="font-semibold text-slate-900 mb-5 md:mb-6">Upcoming Timeline</h2>
-        <div className="relative">
-          <div className="absolute left-[60px] top-2.5 bottom-2.5 w-px bg-slate-200" />
-          <div className="space-y-5 md:space-y-6">
-            {timeline.map((item, i) => (
-              <div key={i} className="flex items-start gap-5">
-                <span className="w-[60px] text-xs font-bold text-slate-400 pt-0.5 shrink-0 text-right pr-2">{item.code}</span>
-                <div className={`w-3 h-3 rounded-full mt-0.5 shrink-0 z-10 relative ring-2 ring-white ${
-                  item.status === 'ok' ? 'bg-emerald-500' : item.status === 'urgent' ? 'bg-red-500' : 'bg-blue-400'
-                }`} />
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{item.name}</p>
-                  <p className={`text-xs mt-0.5 flex items-center gap-1.5 ${item.status === 'urgent' ? 'text-red-500' : item.status === 'ok' ? 'text-emerald-500' : 'text-slate-400'}`}>
-                    {item.status === 'urgent'   && <AlertTriangle size={11} />}
-                    {item.status === 'ok'       && <CheckCircle size={11} />}
-                    {item.status === 'planning' && <Clock size={11} />}
-                    {item.note}
-                  </p>
-                </div>
-              </div>
-            ))}
+        {upcoming.length === 0 ? (
+          <p className="py-6 text-center text-sm text-slate-400">No upcoming events scheduled.</p>
+        ) : (
+          <div className="relative">
+            <div className="absolute left-[60px] top-2.5 bottom-2.5 w-px bg-slate-200" />
+            <div className="space-y-5 md:space-y-6">
+              {upcoming.map((ev, i) => {
+                const isPast = new Date(ev.date) < new Date()
+                return (
+                  <div key={i} className="flex items-start gap-5">
+                    <span className="w-[60px] text-xs font-bold text-slate-400 pt-0.5 shrink-0 text-right pr-2 leading-tight">
+                      {fmtDate(ev.date).replace(/,.*/, '')}
+                    </span>
+                    <div className={`w-3 h-3 rounded-full mt-0.5 shrink-0 z-10 relative ring-2 ring-white ${
+                      ev.status === 'Critical' ? 'bg-red-500' : ev.status === 'On Track' ? 'bg-emerald-500' : 'bg-blue-400'
+                    }`} />
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{ev.name}</p>
+                      <p className={`text-xs mt-0.5 flex items-center gap-1.5 ${ev.status === 'Critical' ? 'text-red-500' : ev.status === 'On Track' ? 'text-emerald-500' : 'text-slate-400'}`}>
+                        {ev.status === 'Critical' && <AlertTriangle size={11} />}
+                        {ev.status === 'On Track' && <CheckCircle size={11} />}
+                        {(ev.status === 'Planning' || ev.status === 'Filling') && <Clock size={11} />}
+                        {ev.status} · {ev.total} staff needed · {ev.location}
+                        {isPast && ' · Past'}
+                      </p>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

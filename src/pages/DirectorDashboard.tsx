@@ -1,51 +1,21 @@
 import { useNavigate } from 'react-router-dom'
-import { TrendingUp, Users, Star, DollarSign, Bell, Plus, ChevronRight, AlertTriangle, Activity } from 'lucide-react'
+import { TrendingUp, Users, DollarSign, Bell, Plus, ChevronRight, AlertTriangle, Activity } from 'lucide-react'
 import Avatar from '../components/Avatar'
+import { useEvents, fmtDate, STATUS_BADGE, PROGRESS_BAR } from '../context/EventsContext'
 
 const kpis = [
   { label: 'Total Revenue (MTD)', value: '$84,240', badge: '+12.5%',  ok: true,  sub: 'vs last month',    Icon: DollarSign, cls: 'text-emerald-600 bg-emerald-50' },
   { label: 'Staff Utilization',   value: '92.4%',   badge: 'Optimal', ok: true,  sub: '342 / 370 staff',  Icon: Users,      cls: 'text-blue-600 bg-blue-50' },
-  { label: 'Avg Event Rating',    value: '4.8 / 5', badge: 'High',    ok: true,  sub: '24 reviews',       Icon: Star,       cls: 'text-amber-600 bg-amber-50' },
   { label: 'Payroll Processing',  value: '$12,410', badge: 'Pending', ok: false, sub: '42 recipients',    Icon: Activity,   cls: 'text-orange-600 bg-orange-50' },
 ]
 
-const liveEvents = [
-  { name: 'Nike Product Launch', venue: 'Grand Convention Hall', time: '08:00 – 18:00', checked: 42, total: 50, supervisor: 'Sarah Jenkins', status: 'On Track' },
-  { name: 'BMW Roadshow',        venue: 'City Auto Center',      time: '10:00 – 20:00', checked: 8,  total: 20, supervisor: 'Marcus Low',    status: 'Critical' },
-  { name: 'Tech Summit 2023',    venue: 'Innovation Hub',        time: '09:00 – 17:00', checked: 45, total: 50, supervisor: 'Aria Gupta',   status: 'On Track' },
-  { name: 'City Music Festival', venue: 'Central Park Stage',    time: '14:00 – 23:00', checked: 18, total: 30, supervisor: 'James Wilson', status: 'Filling' },
-]
-
-const performers = [
-  { name: 'Sarah Jenkins', role: 'Lead Promoter', rating: 4.9, tag: 'High Demand',  tagCls: 'bg-blue-100 text-blue-700' },
-  { name: 'Marcus Low',    role: 'Promoter',      rating: 4.7, tag: 'Dependable',   tagCls: 'bg-emerald-100 text-emerald-700' },
-  { name: 'Aria Gupta',    role: 'Supervisor',    rating: 4.5, tag: 'Available',    tagCls: 'bg-slate-100 text-slate-600' },
-]
-
-const alerts = [
-  { level: 'critical', msg: 'BMW Roadshow: Only 8/20 staff confirmed',        action: 'Assign Staff' },
-  { level: 'warning',  msg: 'Tech Summit: 2 staff have scheduling conflicts', action: 'Review' },
-]
-
-const upcoming = [
-  { date: 'Oct 24', name: 'Nike Product Launch', staff: 42, status: 'On Track' },
-  { date: 'Oct 26', name: 'BMW Roadshow',        staff: 8,  status: 'Critical' },
-  { date: 'Oct 28', name: 'Tech Summit 2023',    staff: 45, status: 'On Track' },
-]
-
-const STATUS_BADGE: Record<string, string> = {
-  'On Track': 'bg-emerald-100 text-emerald-700',
-  'Critical': 'bg-red-100 text-red-700',
-  'Filling':  'bg-amber-100 text-amber-700',
-}
-const PROGRESS_BAR: Record<string, string> = {
-  'On Track': 'bg-emerald-500',
-  'Critical': 'bg-red-500',
-  'Filling':  'bg-amber-500',
-}
+const performers: { name: string; role: string; tag: string; tagCls: string }[] = []
+const alerts: { level: string; msg: string; action: string }[] = []
 
 export default function DirectorDashboard() {
   const navigate = useNavigate()
+  const { events } = useEvents()
+  const upcoming = [...events].sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5)
 
   return (
     <div className="p-4 md:p-8 max-w-[1400px]">
@@ -99,28 +69,31 @@ export default function DirectorDashboard() {
             <button className="text-sm text-blue-600 font-medium flex items-center gap-1">View All <ChevronRight size={14} /></button>
           </div>
           <div className="divide-y divide-slate-100">
-            {liveEvents.map(ev => {
-              const pct = Math.round((ev.checked / ev.total) * 100)
+            {events.length === 0 && (
+              <p className="px-6 py-10 text-center text-sm text-slate-400">No live events right now.</p>
+            )}
+            {events.map(ev => {
+              const pct = ev.total > 0 ? Math.round((ev.filled / ev.total) * 100) : 0
               return (
-                <div key={ev.name} className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                <div key={ev.id} className="px-4 md:px-6 py-3 md:py-4 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                       <p className="font-semibold text-slate-900 text-sm">{ev.name}</p>
                       <span className={`text-[11px] px-2 py-0.5 rounded-full font-semibold ${STATUS_BADGE[ev.status]}`}>{ev.status}</span>
                     </div>
-                    <p className="text-slate-400 text-xs">{ev.venue} · {ev.time}</p>
+                    <p className="text-slate-400 text-xs">{ev.location} · {fmtDate(ev.date)}</p>
                   </div>
                   <div className="flex items-center gap-3 sm:w-40 sm:shrink-0">
                     <div className="flex-1 sm:flex-none sm:w-40">
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="text-slate-400">{ev.checked}/{ev.total}</span>
+                        <span className="text-slate-400">{ev.filled}/{ev.total}</span>
                         <span className="font-semibold text-slate-700">{pct}%</span>
                       </div>
                       <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div className={`h-full rounded-full ${PROGRESS_BAR[ev.status]}`} style={{ width: `${pct}%` }} />
                       </div>
                     </div>
-                    <button onClick={() => navigate('/events/1')} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 shrink-0">
+                    <button onClick={() => navigate(`/events/${ev.id}`)} className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-100 shrink-0">
                       Manage
                     </button>
                   </div>
@@ -138,7 +111,9 @@ export default function DirectorDashboard() {
               <h2 className="font-semibold text-slate-900">Top Performers</h2>
             </div>
             <div className="p-5 space-y-3.5">
-              {performers.map(p => (
+              {performers.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-2">No performer data yet.</p>
+              ) : performers.map(p => (
                 <div key={p.name} className="flex items-center gap-3">
                   <Avatar name={p.name} size="sm" />
                   <div className="flex-1 min-w-0">
@@ -146,7 +121,6 @@ export default function DirectorDashboard() {
                     <p className="text-xs text-slate-400">{p.role}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs font-bold text-amber-500">{p.rating} ★</p>
                     <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${p.tagCls}`}>{p.tag}</span>
                   </div>
                 </div>
@@ -171,7 +145,9 @@ export default function DirectorDashboard() {
               <h2 className="font-semibold text-slate-900">Critical Alerts</h2>
             </div>
             <div className="p-4 space-y-2">
-              {alerts.map((a, i) => (
+              {alerts.length === 0 ? (
+                <p className="text-sm text-slate-400 text-center py-2">No active alerts.</p>
+              ) : alerts.map((a, i) => (
                 <div key={i} className={`flex items-start gap-2.5 p-3 rounded-lg ${a.level === 'critical' ? 'bg-red-50' : 'bg-amber-50'}`}>
                   <AlertTriangle size={13} className={`mt-0.5 shrink-0 ${a.level === 'critical' ? 'text-red-500' : 'text-amber-500'}`} />
                   <p className={`text-xs flex-1 leading-relaxed ${a.level === 'critical' ? 'text-red-700' : 'text-amber-700'}`}>{a.msg}</p>
@@ -190,13 +166,16 @@ export default function DirectorDashboard() {
           <button onClick={() => navigate('/schedule')} className="text-sm text-blue-600 font-medium flex items-center gap-1">Schedule <ChevronRight size={14} /></button>
         </div>
         <div className="divide-y divide-slate-100">
+          {upcoming.length === 0 && (
+            <p className="px-6 py-8 text-center text-sm text-slate-400">No upcoming events scheduled.</p>
+          )}
           {upcoming.map(ev => (
-            <div key={ev.name} className="px-4 md:px-6 py-3.5 flex items-center gap-3 md:gap-6">
-              <span className="text-xs font-bold text-slate-400 w-14 shrink-0">{ev.date}</span>
+            <div key={ev.id} className="px-4 md:px-6 py-3.5 flex items-center gap-3 md:gap-6">
+              <span className="text-xs font-bold text-slate-400 w-16 shrink-0">{fmtDate(ev.date).replace(/,.*/, '')}</span>
               <p className="text-sm font-semibold text-slate-900 flex-1 truncate">{ev.name}</p>
               <span className={`text-xs px-2 py-0.5 rounded-full font-semibold hidden sm:inline ${STATUS_BADGE[ev.status]}`}>{ev.status}</span>
-              <span className="text-xs text-slate-400 hidden md:inline">{ev.staff} staff</span>
-              <button onClick={() => navigate('/events/1')} className="text-xs text-blue-600 font-medium shrink-0">Details →</button>
+              <span className="text-xs text-slate-400 hidden md:inline">{ev.total} staff needed</span>
+              <button onClick={() => navigate(`/events/${ev.id}`)} className="text-xs text-blue-600 font-medium shrink-0">Details →</button>
             </div>
           ))}
         </div>
