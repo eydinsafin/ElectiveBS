@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Plus, Filter } from 'lucide-react'
 import { useEvents, fmtDate, fmtTime, STATUS_BADGE } from '../context/EventsContext'
+import { useToast } from '../context/ToastContext'
 
 const WEEK_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December']
@@ -29,6 +30,7 @@ const EVENT_CLS: Record<string, string> = {
 export default function ScheduleOverview() {
   const navigate = useNavigate()
   const { events } = useEvents()
+  const toast = useToast()
 
   const today = new Date()
   const [viewYear, setViewYear]   = useState(today.getFullYear())
@@ -90,13 +92,22 @@ export default function ScheduleOverview() {
         <div className="flex items-center gap-2">
           <div className="flex bg-slate-100 rounded-lg p-1">
             {(['month', 'week'] as const).map(v => (
-              <button key={v} onClick={() => setView(v)} className={`px-3 py-1.5 rounded-md text-sm font-medium capitalize transition-all ${view === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>{v}</button>
+              <button
+                key={v}
+                onClick={() => {
+                  setView(v)
+                  if (v === 'week') toast.show('Week view is coming in the next release', 'info')
+                }}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium capitalize transition-all ${view === v ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                {v}
+              </button>
             ))}
           </div>
           <button onClick={() => setShowSidebar(v => !v)} className="lg:hidden p-2 border border-slate-200 bg-white rounded-lg hover:bg-slate-50">
             <Filter size={16} className="text-slate-500" />
           </button>
-          <button onClick={() => navigate('/events/create')} className="flex items-center gap-2 px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-600/20">
+          <button onClick={() => navigate('/events/create')} className="flex items-center gap-2 px-3 md:px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition-colors shadow-md shadow-amber-600/20">
             <Plus size={15} />
             <span className="hidden sm:inline">Create Event</span>
             <span className="sm:hidden">New</span>
@@ -142,11 +153,11 @@ export default function ScheduleOverview() {
                         key={ci}
                         onClick={() => setSelected(day)}
                         className={`h-14 md:h-24 rounded-lg p-1 md:p-2 cursor-pointer border transition-colors ${
-                          isSel ? 'border-blue-400 bg-blue-50' : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
+                          isSel ? 'border-amber-400 bg-amber-50' : 'border-transparent hover:border-slate-200 hover:bg-slate-50'
                         }`}
                       >
                         <div className={`w-6 h-6 md:w-7 md:h-7 flex items-center justify-center rounded-full text-xs md:text-sm font-semibold ${
-                          isSel ? 'bg-blue-600 text-white' : isToday(day) ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-700'
+                          isSel ? 'bg-amber-600 text-white' : isToday(day) ? 'bg-slate-200 text-slate-900 font-bold' : 'text-slate-700'
                         }`}>
                           {day}
                         </div>
@@ -194,7 +205,7 @@ export default function ScheduleOverview() {
           <div className="px-4 md:px-6 py-3 border-t border-slate-100 flex flex-wrap items-center gap-3 md:gap-6">
             {[
               { label: 'Today',    color: 'bg-slate-300' },
-              { label: 'Selected', color: 'bg-blue-600' },
+              { label: 'Selected', color: 'bg-amber-600' },
               { label: 'On Track', color: 'bg-emerald-500' },
               { label: 'Critical', color: 'bg-red-500' },
               { label: 'Filling',  color: 'bg-amber-500' },
@@ -218,9 +229,9 @@ export default function ScheduleOverview() {
             </div>
             <div className="p-3 space-y-0.5">
               {qfilters.map(f => (
-                <button key={f.label} onClick={() => setActiveFilter(f.label)} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${activeFilter === f.label ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
+                <button key={f.label} onClick={() => setActiveFilter(f.label)} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-colors ${activeFilter === f.label ? 'bg-amber-50 text-amber-700 font-semibold' : 'text-slate-600 hover:bg-slate-50'}`}>
                   <span>{f.label}</span>
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${activeFilter === f.label ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'}`}>{f.count}</span>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${activeFilter === f.label ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'}`}>{f.count}</span>
                 </button>
               ))}
             </div>

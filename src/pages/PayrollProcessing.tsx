@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, CheckCircle, XCircle, AlertTriangle, Clock, DollarSign, Users, Check, X } from 'lucide-react'
 import Avatar from '../components/Avatar'
 import { useEvents, fmtDate, AssignedPerson } from '../context/EventsContext'
+import { useToast } from '../context/ToastContext'
 
 type Tier = 'Expert' | 'Senior' | 'Junior'
 const TIER_BADGE: Record<Tier, string> = {
@@ -36,8 +37,10 @@ today.setHours(0, 0, 0, 0)
 export default function PayrollProcessing() {
   const navigate = useNavigate()
   const { events } = useEvents()
+  const toast = useToast()
 
   const [statuses, setStatuses] = useState<Record<string, ApprovalStatus>>({})
+  const [processed, setProcessed] = useState(false)
   const [notes, setNotes]       = useState<Record<string, string>>({})
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
 
@@ -356,8 +359,15 @@ export default function PayrollProcessing() {
               <p className="text-emerald-100 text-xs mt-0.5">Connect PayNow or Wise to process these payments automatically</p>
             </div>
           </div>
-          <button className="px-5 py-2.5 bg-white text-emerald-700 rounded-lg font-bold text-sm hover:bg-emerald-50 shrink-0 transition-colors">
-            Process Payments →
+          <button
+            onClick={() => {
+              setProcessed(true)
+              toast.show(`$${approvedAmt.toFixed(2)} payment batch sent for processing`)
+            }}
+            disabled={processed}
+            className="px-5 py-2.5 bg-white text-emerald-700 rounded-lg font-bold text-sm hover:bg-emerald-50 shrink-0 transition-colors disabled:opacity-60 disabled:cursor-default"
+          >
+            {processed ? '✓ Payments Processed' : 'Process Payments →'}
           </button>
         </div>
       )}

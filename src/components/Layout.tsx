@@ -3,6 +3,7 @@ import { ReactNode } from 'react'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import Avatar from './Avatar'
+import logo from '../assets/logo.png'
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
@@ -28,8 +29,11 @@ export default function Layout({ children }: { children: ReactNode }) {
           >
             <Menu size={20} className="text-slate-600" />
           </button>
-          <span className="font-bold text-slate-900 text-[17px] tracking-tight">EventOS</span>
-          <Avatar name="Jonathan Wick" size="sm" />
+          <div className="flex items-center gap-1.5">
+            <img src={logo} alt="" className="w-6 h-6 object-contain" />
+            <span className="font-bold text-slate-900 text-[17px] tracking-tight">EventOS</span>
+          </div>
+          <Avatar name="Darren Ong Wei Kiat" size="sm" />
         </header>
 
         <main className="flex-1 overflow-y-auto">

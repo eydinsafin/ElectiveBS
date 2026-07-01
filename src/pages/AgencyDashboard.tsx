@@ -21,12 +21,13 @@ export default function AgencyDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 md:mb-8">
         <div>
-          <h1 className="text-xl md:text-2xl font-bold text-slate-900">Agency Overview</h1>
+          <p className="text-xs font-semibold text-amber-600 uppercase tracking-widest mb-1">Elite Agency</p>
+          <h1 className="text-3xl md:text-4xl text-slate-900">Agency Overview</h1>
           <p className="text-slate-500 text-sm mt-1">Real-time insights into active events and operations</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => navigate('/schedule')} className="px-3 md:px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">Schedule</button>
-          <button onClick={() => navigate('/events/create')} className="px-3 md:px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-600/20">Create Event</button>
+          <button onClick={() => navigate('/events/create')} className="px-3 md:px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition-colors shadow-md shadow-amber-600/20">Create Event</button>
         </div>
       </div>
 
@@ -36,7 +37,7 @@ export default function AgencyDashboard() {
         <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200">
           <div className="px-4 md:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
             <h2 className="font-semibold text-slate-900">Active Operations</h2>
-            <button onClick={() => navigate('/events')} className="text-sm text-blue-600 font-medium flex items-center gap-1">View All <ChevronRight size={14} /></button>
+            <button onClick={() => navigate('/events')} className="text-sm text-amber-600 font-medium flex items-center gap-1 hover:text-amber-700">View All <ChevronRight size={14} /></button>
           </div>
           <div className="divide-y divide-slate-100">
             {events.length === 0 ? (
@@ -87,7 +88,7 @@ export default function AgencyDashboard() {
           </div>
           <div className="px-5 pb-5">
             <div className="h-px bg-slate-100 mb-4" />
-            <button onClick={() => navigate('/payroll/PAY-2023-10-B')} className="w-full py-2.5 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
+            <button onClick={() => navigate('/payroll/PAY-2023-10-B')} className="w-full py-2.5 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 transition-colors">
               Approve Payroll Batch
             </button>
           </div>

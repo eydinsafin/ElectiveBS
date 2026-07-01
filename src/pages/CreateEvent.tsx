@@ -1,18 +1,20 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ChevronRight, Plus, Minus, Info, Trash2, MapPin, AlertCircle } from 'lucide-react'
+import { ChevronRight, Plus, Minus, Info, Trash2, MapPin, AlertCircle, FileText } from 'lucide-react'
 import { useEvents, fmtDate, fmtTime } from '../context/EventsContext'
 import type { AppEvent, StaffRole } from '../context/EventsContext'
+import { useToast } from '../context/ToastContext'
 
 let _id = 1
 const newRow = (): StaffRole => ({ id: _id++, role: '', responsibilities: '', count: 1, rate: 0, hours: 8 })
 
-const INPUT = 'w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-colors bg-white'
+const INPUT = 'w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors bg-white'
 
 export default function CreateEvent() {
   const navigate = useNavigate()
   const { addEvent } = useEvents()
-  const [form, setForm] = useState({ name: '', date: '', location: '', from: '', to: '' })
+  const toast = useToast()
+  const [form, setForm] = useState({ name: '', date: '', location: '', from: '', to: '', notes: '' })
   const [rows, setRows] = useState<StaffRole[]>([newRow()])
   const [mapLocation, setMapLocation] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -63,11 +65,37 @@ export default function CreateEvent() {
       filled: 0,
       total: totalStaff,
       createdAt: Date.now(),
+      notes: form.notes.trim() || undefined,
     }
 
     addEvent(event)
     setPosted(true)
+    toast.show(`"${event.name}" created and posted`)
     setTimeout(() => navigate('/events'), 1200)
+  }
+
+  const handleSaveDraft = () => {
+    if (!form.name.trim()) {
+      setErrors({ name: 'Event name is required to save a draft' })
+      return
+    }
+    const event: AppEvent = {
+      id: `EVT-${Date.now()}`,
+      name: form.name.trim(),
+      date: form.date,
+      from: form.from,
+      to: form.to,
+      location: form.location.trim(),
+      status: 'Planning',
+      staffRoles: rows,
+      filled: 0,
+      total: totalStaff,
+      createdAt: Date.now(),
+      notes: form.notes.trim() || undefined,
+    }
+    addEvent(event)
+    toast.show(`"${event.name}" saved as draft`)
+    navigate('/events')
   }
 
   return (
@@ -91,7 +119,7 @@ export default function CreateEvent() {
           {/* Step 1: Event Information */}
           <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
             <div className="flex items-center gap-2.5 mb-5">
-              <span className="w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0">1</span>
+              <span className="w-6 h-6 bg-amber-600 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0">1</span>
               <h2 className="font-semibold text-slate-900">Event Information</h2>
             </div>
 
@@ -180,7 +208,7 @@ export default function CreateEvent() {
                         href={`https://maps.google.com/maps?q=${encodeURIComponent(mapLocation)}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-xs text-blue-600 font-medium shrink-0 hover:underline ml-auto"
+                        className="text-xs text-amber-600 font-medium shrink-0 hover:underline ml-auto"
                       >
                         Open in Maps →
                       </a>
@@ -191,11 +219,27 @@ export default function CreateEvent() {
             </div>
           </div>
 
-          {/* Step 2: Staffing */}
+          {/* Notes */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
+            <div className="flex items-center gap-2.5 mb-4">
+              <span className="w-6 h-6 bg-amber-600 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0">2</span>
+              <h2 className="font-semibold text-slate-900">Notes</h2>
+              <span className="text-xs text-slate-400 ml-auto">Optional</span>
+            </div>
+            <textarea
+              rows={3}
+              placeholder="Special instructions, client contacts, dress code, parking info..."
+              value={form.notes}
+              onChange={e => setField('notes', e.target.value)}
+              className={INPUT + ' resize-none'}
+            />
+          </div>
+
+          {/* Step 3: Staffing */}
           <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2.5">
-                <span className="w-6 h-6 bg-blue-600 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0">2</span>
+                <span className="w-6 h-6 bg-amber-600 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0">3</span>
                 <h2 className="font-semibold text-slate-900">Staffing Requirements</h2>
               </div>
               <span className="text-xs text-slate-400">{totalStaff} staff · {totalBudget > 0 ? `$${totalBudget.toFixed(0)} est.` : 'no cost yet'}</span>
@@ -286,9 +330,9 @@ export default function CreateEvent() {
                     </div>
 
                     {row.rate > 0 && (
-                      <div className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
-                        <span className="text-xs text-blue-600">{row.count} staff × ${row.rate}/hr × {row.hours}h</span>
-                        <span className="text-sm font-bold text-blue-700">${(row.count * row.rate * row.hours).toFixed(2)}</span>
+                      <div className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2">
+                        <span className="text-xs text-amber-600">{row.count} staff × ${row.rate}/hr × {row.hours}h</span>
+                        <span className="text-sm font-bold text-amber-700">${(row.count * row.rate * row.hours).toFixed(2)}</span>
                       </div>
                     )}
                   </div>
@@ -297,7 +341,7 @@ export default function CreateEvent() {
 
               <button
                 onClick={addRow}
-                className="flex items-center gap-2 text-sm text-blue-600 font-medium w-full justify-center border border-dashed border-blue-200 hover:border-blue-400 rounded-xl py-3 bg-blue-50/50 hover:bg-blue-50 transition-all"
+                className="flex items-center gap-2 text-sm text-amber-600 font-medium w-full justify-center border border-dashed border-amber-200 hover:border-amber-400 rounded-xl py-3 bg-amber-50/50 hover:bg-amber-50 transition-all"
               >
                 <Plus size={14} /> Add Another Role
               </button>
@@ -311,7 +355,7 @@ export default function CreateEvent() {
               <div className="flex justify-between"><span className="text-sm text-slate-500">Total Staff</span><span className="text-sm font-bold text-slate-900">{totalStaff} persons</span></div>
               <div className="flex justify-between"><span className="text-sm text-slate-500">Labour Cost</span><span className="text-sm font-bold text-slate-900">${totalBudget.toFixed(2)}</span></div>
               <div className="flex justify-between"><span className="text-sm text-slate-500">Service Fee (15%)</span><span className="text-sm text-slate-500">{totalBudget > 0 ? `$${serviceFee.toFixed(2)}` : '—'}</span></div>
-              {totalBudget > 0 && <div className="flex justify-between pt-2 border-t border-slate-100"><span className="text-sm font-bold text-slate-900">Total Estimate</span><span className="text-sm font-bold text-blue-600">${(totalBudget + serviceFee).toFixed(2)}</span></div>}
+              {totalBudget > 0 && <div className="flex justify-between pt-2 border-t border-slate-100"><span className="text-sm font-bold text-slate-900">Total Estimate</span><span className="text-sm font-bold text-amber-600">${(totalBudget + serviceFee).toFixed(2)}</span></div>}
             </div>
           </div>
 
@@ -323,12 +367,16 @@ export default function CreateEvent() {
               className={`flex-1 py-3 rounded-xl font-semibold text-sm transition-colors shadow-md ${
                 posted
                   ? 'bg-emerald-500 text-white shadow-emerald-500/20 cursor-default'
-                  : 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20'
+                  : 'bg-amber-600 text-white hover:bg-amber-700 shadow-amber-600/20'
               }`}
             >
               {posted ? '✓ Event Posted! Redirecting...' : 'Create & Post Event'}
             </button>
-            <button className="flex-1 py-3 border border-slate-200 bg-white text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-50 transition-colors">
+            <button
+              onClick={handleSaveDraft}
+              disabled={posted}
+              className="flex-1 py-3 border border-slate-200 bg-white text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-50 transition-colors disabled:opacity-40"
+            >
               Save as Draft
             </button>
           </div>
@@ -383,7 +431,7 @@ export default function CreateEvent() {
                 <div className="h-px bg-slate-200 my-4" />
                 <div className="flex justify-between">
                   <span className="text-sm font-bold text-slate-900">Total Estimate</span>
-                  <span className="text-base font-bold text-blue-600">${(totalBudget + serviceFee).toFixed(2)}</span>
+                  <span className="text-base font-bold text-amber-600">${(totalBudget + serviceFee).toFixed(2)}</span>
                 </div>
               </>
             )}

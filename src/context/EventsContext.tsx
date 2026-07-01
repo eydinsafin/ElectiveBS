@@ -14,25 +14,55 @@ export type AssignedPerson = {
   name: string
   phone: string
   tier: 'Expert' | 'Senior' | 'Junior'
+  unavailableDates?: string[]
 }
 
-export const STAFF_POOL: AssignedPerson[] = [
-  { id: 'sp-1', name: 'Sarah Jenkins', phone: '07712 345678', tier: 'Expert' },
-  { id: 'sp-2', name: 'Marcus Low',    phone: '07723 456789', tier: 'Senior' },
-  { id: 'sp-3', name: 'Aria Gupta',    phone: '07734 567890', tier: 'Senior' },
-  { id: 'sp-4', name: 'James Wilson',  phone: '07745 678901', tier: 'Senior' },
-  { id: 'sp-5', name: 'Emma Chen',     phone: '07756 789012', tier: 'Expert' },
-  { id: 'sp-6', name: 'David Park',    phone: '07767 890123', tier: 'Junior' },
-  { id: 'sp-7', name: 'Lisa Torres',   phone: '07778 901234', tier: 'Senior' },
-  { id: 'sp-8', name: 'Tom Hayes',     phone: '07789 012345', tier: 'Junior' },
+export const DEFAULT_STAFF_POOL: AssignedPerson[] = [
+  { id: 'sp-1',  name: 'Lin Mei Xuan',          phone: '9123 4567', tier: 'Expert', unavailableDates: [] },
+  { id: 'sp-2',  name: 'Marcus Low Wei Jie',   phone: '9234 5678', tier: 'Expert', unavailableDates: [] },
+  { id: 'sp-3',  name: 'Priya Nair',           phone: '9345 6789', tier: 'Expert', unavailableDates: [] },
+  { id: 'sp-4',  name: 'Nicole Ong Mei Lin',   phone: '9456 7890', tier: 'Expert', unavailableDates: [] },
+  { id: 'sp-5',  name: 'Kavitha Pillai',       phone: '9567 8901', tier: 'Expert', unavailableDates: [] },
+  { id: 'sp-6',  name: 'Emma Chen Jia Hui',    phone: '9678 9012', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-7',  name: 'Jasmine Koh Xin Yi',  phone: '9789 0123', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-8',  name: 'Hafiz Bin Mohamad',    phone: '9890 1234', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-9',  name: 'Kevin Raj',            phone: '9012 3456', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-10', name: 'Melissa Wong Shu Fen', phone: '9111 2233', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-11', name: 'Daniel Ang Boon Kiat', phone: '9222 3344', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-12', name: 'Fatimah Binte Hassan', phone: '9333 4455', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-13', name: 'Yong Jian Hao',         phone: '9444 5566', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-14', name: 'Lisa Tan Hui Ling',    phone: '9555 6677', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-15', name: 'Aditya Sharma',        phone: '9666 7788', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-16', name: 'Ryan Lim Jian Hao',   phone: '9777 8899', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-17', name: 'Chloe Tan Rui En',    phone: '9888 9900', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-18', name: 'Brandon Lee Kai Xin',  phone: '9900 1122', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-19', name: 'Siti Nurhaliza Bte R', phone: '8123 4567', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-20', name: 'Aaron Teo Wei Liang',  phone: '8234 5678', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-21', name: 'Nurul Ain Binte Aziz', phone: '8345 6789', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-22', name: 'Ethan Goh Zhi Hao',   phone: '8456 7890', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-23', name: 'Raewyn Chew Pei Shan', phone: '8567 8901', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-24', name: 'Muhammad Farid Bin S', phone: '8678 9012', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-25', name: 'Cheryl Lim Shi Ting', phone: '8789 0123', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-26', name: 'Rayyan Bin Hashim',   phone: '8890 1234', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-27', name: 'Jacelyn Tan Pei Ying',phone: '8901 2345', tier: 'Senior', unavailableDates: [] },
+  { id: 'sp-28', name: 'Rishav Mehta',        phone: '9010 2345', tier: 'Junior', unavailableDates: [] },
+  { id: 'sp-29', name: 'Joanna Lee Wen Qi',   phone: '9120 3456', tier: 'Expert', unavailableDates: [] },
 ]
+
+// backward-compat alias
+export const STAFF_POOL = DEFAULT_STAFF_POOL
+
+const p = (id: string): AssignedPerson => {
+  const found = DEFAULT_STAFF_POOL.find(s => s.id === id)!
+  return { id: found.id, name: found.name, phone: found.phone, tier: found.tier }
+}
 
 export type AppEvent = {
   id: string
   name: string
-  date: string       // YYYY-MM-DD
-  from: string       // HH:MM
-  to: string         // HH:MM
+  date: string
+  from: string
+  to: string
   location: string
   status: 'On Track' | 'Filling' | 'Critical' | 'Planning'
   staffRoles: StaffRole[]
@@ -40,36 +70,198 @@ export type AppEvent = {
   total: number
   createdAt: number
   assignments?: { [roleId: string]: AssignedPerson[] }
+  notes?: string
 }
 
-type EventPatch = Partial<Pick<AppEvent, 'name' | 'date' | 'from' | 'to' | 'location' | 'status'>>
+const SAMPLE_EVENTS: AppEvent[] = [
+  {
+    id: 'EVT-SG-001',
+    name: 'Marina Bay Sands Product Launch',
+    date: '2026-07-15',
+    from: '08:00',
+    to: '21:00',
+    location: 'Marina Bay Sands Expo & Convention Centre',
+    status: 'Filling',
+    staffRoles: [
+      { id: 101, role: 'Brand Ambassador',          responsibilities: 'Product demos, guest engagement and brand storytelling', count: 18, rate: 25, hours: 13 },
+      { id: 102, role: 'Registration & Guest Svcs', responsibilities: 'Guest check-in, badge printing, queue management',       count: 8,  rate: 20, hours: 13 },
+      { id: 103, role: 'Event Coordinator',          responsibilities: 'Floor operations, vendor liaison, escalation handling',  count: 5,  rate: 40, hours: 13 },
+      { id: 104, role: 'Logistics Runner',           responsibilities: 'Materials movement, replenishment, backstage support',  count: 10, rate: 18, hours: 13 },
+      { id: 105, role: 'Security Liaison',           responsibilities: 'Access control, crowd flow management',                 count: 5,  rate: 22, hours: 13 },
+    ],
+    filled: 26,
+    total: 46,
+    createdAt: Date.now() - 86400000 * 8,
+    assignments: {
+      '101': [p('sp-1'), p('sp-6'), p('sp-7'), p('sp-10'), p('sp-12'), p('sp-14'), p('sp-17'), p('sp-19'), p('sp-21'), p('sp-23')],
+      '102': [p('sp-3'), p('sp-8'), p('sp-15'), p('sp-16'), p('sp-20'), p('sp-22')],
+      '103': [p('sp-2'), p('sp-4'), p('sp-5')],
+      '104': [p('sp-9'), p('sp-11'), p('sp-13'), p('sp-18'), p('sp-24')],
+      '105': [],
+    },
+    notes: 'Client contact: Mr. Tan Wei Ming (+65 9111 2222). Dress code: all-black smart casual. VIP holding area on Level 4. Load-in from 06:00.',
+  },
+  {
+    id: 'EVT-SG-002',
+    name: 'Sentosa F&B Festival 2026',
+    date: '2026-07-20',
+    from: '12:00',
+    to: '22:00',
+    location: 'Palawan Beach, Sentosa Island',
+    status: 'Critical',
+    staffRoles: [
+      { id: 201, role: 'Hospitality & F&B Staff', responsibilities: 'Food & beverage service across all vendor booths',     count: 28, rate: 18, hours: 10 },
+      { id: 202, role: 'Booth Promoter',           responsibilities: 'Drive foot traffic, engage passers-by, distribute flyers', count: 18, rate: 16, hours: 10 },
+      { id: 203, role: 'Security Personnel',        responsibilities: 'Entrance control, crowd safety, lost & found',        count: 10, rate: 22, hours: 10 },
+      { id: 204, role: 'Event Coordinator',         responsibilities: 'Vendor relations, stage management, MC liaison',      count: 5,  rate: 40, hours: 10 },
+      { id: 205, role: 'Cleanup & Grounds Crew',   responsibilities: 'Waste management, site cleanliness between sessions', count: 6,  rate: 15, hours: 10 },
+    ],
+    filled: 8,
+    total: 67,
+    createdAt: Date.now() - 86400000 * 4,
+    assignments: {
+      '201': [p('sp-6'), p('sp-17'), p('sp-19'), p('sp-23')],
+      '202': [p('sp-16'), p('sp-22')],
+      '203': [p('sp-20'), p('sp-24')],
+      '204': [],
+      '205': [],
+    },
+    notes: 'Outdoor event — tropical heat expected. All staff to bring personal water bottles. Rain contingency: booths move under Palawan Pitstop shelters. Client: Sentosa Development Corporation.',
+  },
+  {
+    id: 'EVT-SG-003',
+    name: 'Singapore Tech Summit 2026',
+    date: '2026-08-05',
+    from: '08:00',
+    to: '18:30',
+    location: 'Suntec Singapore Convention & Exhibition Centre, Hall 403',
+    status: 'On Track',
+    staffRoles: [
+      { id: 301, role: 'Welcome Host & Registration', responsibilities: 'Greeting delegates, badge scanning, directing to halls',       count: 12, rate: 22, hours: 10.5 },
+      { id: 302, role: 'AV Technician',               responsibilities: 'Audio-visual setup, live feed monitoring, mic handovers',     count: 6,  rate: 45, hours: 10.5 },
+      { id: 303, role: 'Booth Assistant',              responsibilities: 'Assist exhibitors, demo support, visitor guidance',           count: 16, rate: 18, hours: 10.5 },
+      { id: 304, role: 'Session Facilitator',          responsibilities: 'Introduce speakers, manage Q&A, timekeeping',                count: 8,  rate: 30, hours: 10.5 },
+      { id: 305, role: 'VIP & Speaker Concierge',      responsibilities: 'Escort VIPs, manage green room, speaker briefings',         count: 4,  rate: 42, hours: 10.5 },
+    ],
+    filled: 46,
+    total: 46,
+    createdAt: Date.now() - 86400000 * 14,
+    assignments: {
+      '301': [p('sp-1'), p('sp-3'), p('sp-6'), p('sp-7'), p('sp-10'), p('sp-12'), p('sp-14'), p('sp-17'), p('sp-19'), p('sp-21'), p('sp-23'), p('sp-16')],
+      '302': [p('sp-2'), p('sp-4'), p('sp-9'), p('sp-11'), p('sp-13'), p('sp-18')],
+      '303': [p('sp-15'), p('sp-20'), p('sp-22'), p('sp-24'), p('sp-8'), p('sp-16'), p('sp-17'), p('sp-19'), p('sp-21'), p('sp-23'), p('sp-6'), p('sp-7'), p('sp-10'), p('sp-12'), p('sp-14'), p('sp-16')],
+      '304': [p('sp-1'), p('sp-3'), p('sp-5'), p('sp-4'), p('sp-2'), p('sp-9'), p('sp-11'), p('sp-13')],
+      '305': [p('sp-5'), p('sp-4'), p('sp-2'), p('sp-3')],
+    },
+    notes: 'Keynote: Dr. Lim Boon Keng at 09:00. Media accreditation required for press area. All staff must wear lanyards at all times. No photography of slides without organiser approval. Client: SGTech.',
+  },
+  {
+    id: 'EVT-SG-004',
+    name: 'Clarke Quay Night Bazaar',
+    date: '2026-08-16',
+    from: '17:00',
+    to: '23:30',
+    location: 'Clarke Quay Central, River Valley Rd',
+    status: 'Planning',
+    staffRoles: [
+      { id: 401, role: 'Booth & Market Promoter', responsibilities: 'Drive shopper engagement, product sampling and demonstrations', count: 12, rate: 16, hours: 6.5 },
+      { id: 402, role: 'Crowd & Traffic Controller', responsibilities: 'Pedestrian flow management, queue management at entry points', count: 6, rate: 18, hours: 6.5 },
+      { id: 403, role: 'Emcee / Stage Host',       responsibilities: 'Stage hosting, crowd warm-up, lucky draw MC duties',          count: 2,  rate: 85, hours: 6.5 },
+      { id: 404, role: 'Event Runner',              responsibilities: 'Errands, stage setup, props management, runner duties',       count: 4,  rate: 15, hours: 6.5 },
+    ],
+    filled: 0,
+    total: 24,
+    createdAt: Date.now() - 86400000 * 2,
+    assignments: {},
+    notes: 'Night market festive theme. Smart casual attire allowed for promoters. Emcee must be bilingual (English + Mandarin). Client: Clarke Quay Merchants Association.',
+  },
+  {
+    id: 'EVT-SG-005',
+    name: 'Gardens by the Bay Corporate Gala',
+    date: '2026-09-06',
+    from: '18:30',
+    to: '23:30',
+    location: 'Flower Dome, Gardens by the Bay',
+    status: 'Planning',
+    staffRoles: [
+      { id: 501, role: 'Banquet Waiter',         responsibilities: '3-course plated dinner service, wine and beverage top-ups', count: 20, rate: 20, hours: 5 },
+      { id: 502, role: 'Drinks Butler',          responsibilities: 'Welcome drinks on arrival, cocktail hour service',          count: 6,  rate: 20, hours: 5 },
+      { id: 503, role: 'Event Manager On-Site',  responsibilities: 'Full floor oversight, client liaison, timeline management', count: 3,  rate: 55, hours: 5 },
+      { id: 504, role: 'Concierge & Usher',      responsibilities: 'Guest arrival, seating guidance, cloakroom management',    count: 4,  rate: 22, hours: 5 },
+      { id: 505, role: "Photographer's Assistant", responsibilities: 'Equipment handling, backdrop management, guest direction', count: 2,  rate: 30, hours: 5 },
+    ],
+    filled: 0,
+    total: 35,
+    createdAt: Date.now() - 86400000 * 1,
+    assignments: {},
+    notes: 'Black-tie event. Zero phone policy during dinner service — strict enforcement. 280 guests expected. Client: Singapore Business Federation. Floristry theme: tropical orchids.',
+  },
+]
+
+type EventPatch = Partial<Pick<AppEvent, 'name' | 'date' | 'from' | 'to' | 'location' | 'status' | 'notes'>>
 
 type Ctx = {
   events: AppEvent[]
+  staffPool: AssignedPerson[]
   addEvent: (e: AppEvent) => void
   updateEvent: (eventId: string, patch: EventPatch) => void
   updateEventRoles: (eventId: string, roles: StaffRole[]) => void
   assignToRole: (eventId: string, roleId: number, person: AssignedPerson) => void
   removeFromRole: (eventId: string, roleId: number, personId: string) => void
+  cloneEvent: (eventId: string) => void
+  addStaffMember: (person: AssignedPerson) => void
+  editStaffMember: (person: AssignedPerson) => void
+  removeStaffMember: (personId: string) => void
 }
 
 const EventsContext = createContext<Ctx>({
   events: [],
+  staffPool: [],
   addEvent: () => {},
   updateEvent: () => {},
   updateEventRoles: () => {},
   assignToRole: () => {},
   removeFromRole: () => {},
+  cloneEvent: () => {},
+  addStaffMember: () => {},
+  editStaffMember: () => {},
+  removeStaffMember: () => {},
 })
 
-const LS_KEY = 'eventos_events'
+const LS_KEY     = 'eventos_events'
+const LS_STAFF   = 'eventos_staff_pool'
+const LS_VERSION = 'eventos_version'
+const DATA_VER   = '4'
+
+function resetStorage() {
+  localStorage.setItem(LS_VERSION, DATA_VER)
+  localStorage.removeItem(LS_KEY)
+  localStorage.removeItem(LS_STAFF)
+}
 
 function load(): AppEvent[] {
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]') } catch { return [] }
+  try {
+    if (localStorage.getItem(LS_VERSION) !== DATA_VER) resetStorage()
+    const raw = localStorage.getItem(LS_KEY)
+    if (raw) return JSON.parse(raw)
+    localStorage.setItem(LS_KEY, JSON.stringify(SAMPLE_EVENTS))
+    return SAMPLE_EVENTS
+  } catch { return SAMPLE_EVENTS }
 }
 
 function save(evts: AppEvent[]) {
   localStorage.setItem(LS_KEY, JSON.stringify(evts))
+}
+
+function loadStaff(): AssignedPerson[] {
+  try {
+    const raw = localStorage.getItem(LS_STAFF)
+    return raw ? JSON.parse(raw) : DEFAULT_STAFF_POOL
+  } catch { return DEFAULT_STAFF_POOL }
+}
+
+function saveStaff(pool: AssignedPerson[]) {
+  localStorage.setItem(LS_STAFF, JSON.stringify(pool))
 }
 
 function computeStatus(filled: number, total: number): AppEvent['status'] {
@@ -82,22 +274,15 @@ function computeStatus(filled: number, total: number): AppEvent['status'] {
 }
 
 export function EventsProvider({ children }: { children: ReactNode }) {
-  const [events, setEvents] = useState<AppEvent[]>(load)
+  const [events, setEvents]       = useState<AppEvent[]>(load)
+  const [staffPool, setStaffPool] = useState<AssignedPerson[]>(loadStaff)
 
   const addEvent = (e: AppEvent) => {
-    setEvents(prev => {
-      const next = [...prev, e]
-      save(next)
-      return next
-    })
+    setEvents(prev => { const next = [...prev, e]; save(next); return next })
   }
 
   const updateEvent = (eventId: string, patch: EventPatch) => {
-    setEvents(prev => {
-      const next = prev.map(e => e.id === eventId ? { ...e, ...patch } : e)
-      save(next)
-      return next
-    })
+    setEvents(prev => { const next = prev.map(e => e.id === eventId ? { ...e, ...patch } : e); save(next); return next })
   }
 
   const updateEventRoles = (eventId: string, roles: StaffRole[]) => {
@@ -145,8 +330,44 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const cloneEvent = (eventId: string) => {
+    setEvents(prev => {
+      const src = prev.find(e => e.id === eventId)
+      if (!src) return prev
+      const clone: AppEvent = {
+        ...src,
+        id: `EVT-${Date.now()}`,
+        name: `${src.name} (Copy)`,
+        createdAt: Date.now(),
+        filled: 0,
+        status: 'Planning',
+        assignments: {},
+      }
+      const next = [...prev, clone]
+      save(next)
+      return next
+    })
+  }
+
+  const addStaffMember = (person: AssignedPerson) => {
+    setStaffPool(prev => { const next = [...prev, person]; saveStaff(next); return next })
+  }
+
+  const editStaffMember = (person: AssignedPerson) => {
+    setStaffPool(prev => { const next = prev.map(p => p.id === person.id ? person : p); saveStaff(next); return next })
+  }
+
+  const removeStaffMember = (personId: string) => {
+    setStaffPool(prev => { const next = prev.filter(p => p.id !== personId); saveStaff(next); return next })
+  }
+
   return (
-    <EventsContext.Provider value={{ events, addEvent, updateEvent, updateEventRoles, assignToRole, removeFromRole }}>
+    <EventsContext.Provider value={{
+      events, staffPool,
+      addEvent, updateEvent, updateEventRoles,
+      assignToRole, removeFromRole, cloneEvent,
+      addStaffMember, editStaffMember, removeStaffMember,
+    }}>
       {children}
     </EventsContext.Provider>
   )

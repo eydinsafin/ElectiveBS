@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { EventsProvider } from './context/EventsContext'
+import { ThemeProvider } from './context/ThemeContext'
+import { ToastProvider } from './context/ToastContext'
 import Layout from './components/Layout'
 import DirectorDashboard from './pages/DirectorDashboard'
 import AgencyDashboard from './pages/AgencyDashboard'
@@ -14,6 +16,8 @@ import ReportsAnalytics from './pages/ReportsAnalytics'
 
 export default function App() {
   return (
+    <ThemeProvider>
+    <ToastProvider>
     <BrowserRouter>
       <EventsProvider>
       <Layout>
@@ -32,5 +36,7 @@ export default function App() {
       </Layout>
       </EventsProvider>
     </BrowserRouter>
+    </ToastProvider>
+    </ThemeProvider>
   )
 }

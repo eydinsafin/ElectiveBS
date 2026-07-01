@@ -7,11 +7,80 @@
 html, body, #root { height: 100%; }
 
 body {
-  background-color: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: #F8FAFC;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  letter-spacing: -0.02em;
+}
+
+button, a[role="button"] {
+  transition: all 150ms ease-in-out;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+.font-display {
+  font-family: 'DM Serif Display', Georgia, serif;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-toast-in {
+  animation: toast-in 200ms ease-out;
+}
+
+.card-hover {
+  transition: transform 150ms ease-in-out, box-shadow 150ms ease-in-out;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px -6px rgba(15, 22, 41, 0.12);
 }
 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+/* ── Dark mode overrides ──────────────────────────────────────────────────── */
+.dark body { background-color: #0f172a; color: #f1f5f9; }
+
+.dark .bg-white       { background-color: #1e293b !important; }
+.dark .bg-slate-50    { background-color: #1e293b !important; }
+.dark .bg-slate-100   { background-color: #334155 !important; }
+
+.dark .border-slate-200 { border-color: #334155 !important; }
+.dark .border-slate-100 { border-color: #293548 !important; }
+
+.dark .text-slate-900 { color: #f1f5f9 !important; }
+.dark .text-slate-700 { color: #cbd5e1 !important; }
+.dark .text-slate-600 { color: #94a3b8 !important; }
+.dark .text-slate-500 { color: #64748b !important; }
+.dark .text-slate-400 { color: #475569 !important; }
+
+.dark .divide-slate-100 > * + * { border-color: #293548 !important; }
+.dark .divide-y > * + *         { border-color: #293548 !important; }
+
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #0f172a !important;
+  color: #f1f5f9 !important;
+  border-color: #334155 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder { color: #475569 !important; }
+
+.dark .hover\:bg-slate-50:hover { background-color: #293548 !important; }
+.dark .hover\:bg-slate-100:hover { background-color: #334155 !important; }
+
+.dark table thead tr { background-color: #1e293b !important; }
