@@ -2,11 +2,14 @@ import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronRight, Plus, Minus, Info, Trash2, MapPin, AlertCircle, FileText } from 'lucide-react'
 import { useEvents, fmtDate, fmtTime } from '../context/EventsContext'
-import type { AppEvent, StaffRole } from '../context/EventsContext'
+import type { AppEvent, StaffRole, VendorService } from '../context/EventsContext'
 import { useToast } from '../context/ToastContext'
 
 let _id = 1
 const newRow = (): StaffRole => ({ id: _id++, role: '', responsibilities: '', count: 1, rate: 0, hours: 8 })
+
+let _vid = 1
+const newVendorRow = (): VendorService => ({ id: _vid++, service: '', description: '', budget: 0, count: 1, type: 'service' })
 
 const INPUT = 'w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-300 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors bg-white'
 
@@ -15,7 +18,8 @@ export default function CreateEvent() {
   const { addEvent } = useEvents()
   const toast = useToast()
   const [form, setForm] = useState({ name: '', date: '', location: '', from: '', to: '', notes: '' })
-  const [rows, setRows] = useState<StaffRole[]>([newRow()])
+  const [rows, setRows]             = useState<StaffRole[]>([newRow()])
+  const [vendorRows, setVendorRows] = useState<VendorService[]>([])
   const [mapLocation, setMapLocation] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [posted, setPosted] = useState(false)
@@ -35,9 +39,17 @@ export default function CreateEvent() {
   const removeRow = (id: number) => setRows(prev => prev.filter(r => r.id !== id))
   const addRow = () => setRows(prev => [...prev, newRow()])
 
-  const totalStaff  = rows.reduce((a, r) => a + r.count, 0)
-  const totalBudget = rows.reduce((a, r) => a + r.count * r.rate * r.hours, 0)
-  const serviceFee  = totalBudget * 0.15
+  const updateVendor = (id: number, field: keyof VendorService, val: string | number) =>
+    setVendorRows(prev => prev.map(r => r.id === id ? { ...r, [field]: val } : r))
+  const changeVendorCount = (id: number, d: number) =>
+    setVendorRows(prev => prev.map(r => r.id === id ? { ...r, count: Math.max(1, r.count + d) } : r))
+  const removeVendorRow = (id: number) => setVendorRows(prev => prev.filter(r => r.id !== id))
+  const addVendorRow    = () => setVendorRows(prev => [...prev, newVendorRow()])
+
+  const totalStaff        = rows.reduce((a, r) => a + r.count, 0)
+  const totalBudget       = rows.reduce((a, r) => a + r.count * r.rate * r.hours, 0)
+  const totalVendorBudget = vendorRows.reduce((a, r) => a + r.budget, 0)
+  const serviceFee        = totalBudget * 0.15
 
   const validate = () => {
     const e: Record<string, string> = {}
@@ -53,6 +65,7 @@ export default function CreateEvent() {
   const handlePost = () => {
     if (!validate()) return
 
+    const validVendors = vendorRows.filter(r => r.service.trim())
     const event: AppEvent = {
       id: `EVT-${Date.now()}`,
       name: form.name.trim(),
@@ -66,6 +79,8 @@ export default function CreateEvent() {
       total: totalStaff,
       createdAt: Date.now(),
       notes: form.notes.trim() || undefined,
+      vendorServices:    validVendors.length > 0 ? validVendors : undefined,
+      vendorAssignments: validVendors.length > 0 ? {} : undefined,
     }
 
     addEvent(event)
@@ -79,6 +94,7 @@ export default function CreateEvent() {
       setErrors({ name: 'Event name is required to save a draft' })
       return
     }
+    const validVendorsDraft = vendorRows.filter(r => r.service.trim())
     const event: AppEvent = {
       id: `EVT-${Date.now()}`,
       name: form.name.trim(),
@@ -92,6 +108,8 @@ export default function CreateEvent() {
       total: totalStaff,
       createdAt: Date.now(),
       notes: form.notes.trim() || undefined,
+      vendorServices:    validVendorsDraft.length > 0 ? validVendorsDraft : undefined,
+      vendorAssignments: validVendorsDraft.length > 0 ? {} : undefined,
     }
     addEvent(event)
     toast.show(`"${event.name}" saved as draft`)
@@ -348,6 +366,135 @@ export default function CreateEvent() {
             </div>
           </div>
 
+          {/* Step 4: Vendor Requirements */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <span className="w-6 h-6 bg-amber-600 text-white text-xs font-bold rounded-full flex items-center justify-center shrink-0">4</span>
+                <h2 className="font-semibold text-slate-900">Vendor Requirements</h2>
+                <span className="text-xs text-slate-400">Optional</span>
+              </div>
+              {totalVendorBudget > 0 && (
+                <span className="text-xs text-slate-400">${totalVendorBudget.toLocaleString()} est. budget</span>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {vendorRows.length === 0 && (
+                <p className="text-sm text-slate-400 text-center py-2">No vendor services added yet — skip or add below</p>
+              )}
+
+              {vendorRows.map((row, idx) => (
+                <div key={row.id} className="border border-slate-200 rounded-xl overflow-hidden">
+                  <div className="bg-slate-50 px-4 py-2 flex items-center justify-between border-b border-slate-100">
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Service {idx + 1}</span>
+                    <button onClick={() => removeVendorRow(row.id)} className="p-1 rounded hover:bg-red-50 text-slate-300 hover:text-red-500 transition-colors">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+
+                  <div className="p-4 space-y-3">
+                    {/* Type toggle */}
+                    <div className="flex gap-1 p-1 bg-slate-100 rounded-lg">
+                      <button
+                        type="button"
+                        onClick={() => updateVendor(row.id, 'type', 'service')}
+                        className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-colors ${(row.type || 'service') === 'service' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        Service Provider (you pay)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateVendor(row.id, 'type', 'participant')}
+                        className={`flex-1 py-1.5 px-2 rounded-md text-xs font-semibold transition-colors ${row.type === 'participant' ? 'bg-white text-emerald-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        Booth / Exhibitor (they pay)
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                          {row.type === 'participant' ? 'Booth Type' : 'Service Type'}
+                        </label>
+                        <input
+                          type="text"
+                          placeholder={row.type === 'participant' ? 'e.g. F&B Stalls, Retail Booths' : 'e.g. Catering, AV & Sound, Security'}
+                          value={row.service}
+                          onChange={e => updateVendor(row.id, 'service', e.target.value)}
+                          className={INPUT}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Description</label>
+                        <input
+                          type="text"
+                          placeholder="Brief scope"
+                          value={row.description}
+                          onChange={e => updateVendor(row.id, 'description', e.target.value)}
+                          className={INPUT}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                          {row.type === 'participant' ? 'Booth Slots' : 'Max Vendors'}
+                        </label>
+                        <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden bg-white">
+                          <button onClick={() => changeVendorCount(row.id, -1)} className="w-9 flex items-center justify-center py-2.5 hover:bg-slate-50 border-r border-slate-200 text-slate-500">
+                            <Minus size={13} />
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            value={row.count}
+                            onChange={e => updateVendor(row.id, 'count', Math.max(1, parseInt(e.target.value) || 1))}
+                            className="flex-1 text-center text-sm font-bold text-slate-900 py-2.5 focus:outline-none w-0"
+                          />
+                          <button onClick={() => changeVendorCount(row.id, 1)} className="w-9 flex items-center justify-center py-2.5 hover:bg-slate-50 border-l border-slate-200 text-slate-500">
+                            <Plus size={13} />
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5">
+                          {row.type === 'participant' ? 'Booth Fee / Vendor ($)' : 'Budget ($)'}
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">$</span>
+                          <input
+                            type="number"
+                            min={0}
+                            placeholder="0"
+                            value={row.budget || ''}
+                            onChange={e => updateVendor(row.id, 'budget', parseFloat(e.target.value) || 0)}
+                            className={INPUT + ' pl-7'}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {row.type === 'participant' && row.budget > 0 && (
+                      <div className="flex items-center justify-between bg-emerald-50 rounded-lg px-3 py-2">
+                        <span className="text-xs text-emerald-600">{row.count} slots × ${row.budget}/slot max revenue</span>
+                        <span className="text-sm font-bold text-emerald-700">${(row.count * row.budget).toLocaleString()}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+
+              <button
+                onClick={addVendorRow}
+                className="flex items-center gap-2 text-sm text-amber-600 font-medium w-full justify-center border border-dashed border-amber-200 hover:border-amber-400 rounded-xl py-3 bg-amber-50/50 hover:bg-amber-50 transition-all"
+              >
+                <Plus size={14} /> Add Vendor Service
+              </button>
+            </div>
+          </div>
+
           {/* Budget summary mobile */}
           <div className="lg:hidden bg-white rounded-xl border border-slate-200 p-4">
             <h3 className="font-semibold text-slate-900 mb-3">Budget Estimate</h3>
@@ -355,7 +502,8 @@ export default function CreateEvent() {
               <div className="flex justify-between"><span className="text-sm text-slate-500">Total Staff</span><span className="text-sm font-bold text-slate-900">{totalStaff} persons</span></div>
               <div className="flex justify-between"><span className="text-sm text-slate-500">Labour Cost</span><span className="text-sm font-bold text-slate-900">${totalBudget.toFixed(2)}</span></div>
               <div className="flex justify-between"><span className="text-sm text-slate-500">Service Fee (15%)</span><span className="text-sm text-slate-500">{totalBudget > 0 ? `$${serviceFee.toFixed(2)}` : '—'}</span></div>
-              {totalBudget > 0 && <div className="flex justify-between pt-2 border-t border-slate-100"><span className="text-sm font-bold text-slate-900">Total Estimate</span><span className="text-sm font-bold text-amber-600">${(totalBudget + serviceFee).toFixed(2)}</span></div>}
+              {totalVendorBudget > 0 && <div className="flex justify-between"><span className="text-sm text-slate-500">Vendor Budget</span><span className="text-sm font-bold text-slate-900">${totalVendorBudget.toLocaleString()}</span></div>}
+              {totalBudget > 0 && <div className="flex justify-between pt-2 border-t border-slate-100"><span className="text-sm font-bold text-slate-900">Total Estimate</span><span className="text-sm font-bold text-amber-600">${(totalBudget + serviceFee + totalVendorBudget).toFixed(2)}</span></div>}
             </div>
           </div>
 
@@ -421,17 +569,34 @@ export default function CreateEvent() {
               </div>
             )}
 
+            {vendorRows.some(r => r.service.trim()) && (
+              <>
+                <div className="h-px bg-slate-100 mb-3" />
+                <p className="text-[11px] text-slate-400 uppercase tracking-wide font-semibold mb-2">Vendor Services</p>
+                <div className="space-y-2 mb-3">
+                  {vendorRows.filter(r => r.service.trim()).map(r => (
+                    <div key={r.id} className="flex justify-between items-center">
+                      <span className="text-sm text-slate-600 truncate mr-2">{r.service} ×{r.count}</span>
+                      <span className="text-sm font-semibold text-slate-900 shrink-0">{r.budget > 0 ? `$${r.budget.toLocaleString()}` : '—'}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="h-px bg-slate-100 mb-3" />
+              </>
+            )}
+
             <div className="space-y-2.5">
               <div className="flex justify-between"><span className="text-sm text-slate-500">Total Staff</span><span className="text-sm font-bold text-slate-900">{totalStaff} persons</span></div>
               <div className="flex justify-between"><span className="text-sm text-slate-500">Labour Cost</span><span className="text-sm font-bold text-slate-900">${totalBudget.toFixed(2)}</span></div>
               <div className="flex justify-between"><span className="text-sm text-slate-500">Service Fee (15%)</span><span className="text-sm text-slate-500">{totalBudget > 0 ? `$${serviceFee.toFixed(2)}` : '—'}</span></div>
+              {totalVendorBudget > 0 && <div className="flex justify-between"><span className="text-sm text-slate-500">Vendor Budget</span><span className="text-sm font-bold text-slate-900">${totalVendorBudget.toLocaleString()}</span></div>}
             </div>
-            {totalBudget > 0 && (
+            {(totalBudget > 0 || totalVendorBudget > 0) && (
               <>
                 <div className="h-px bg-slate-200 my-4" />
                 <div className="flex justify-between">
                   <span className="text-sm font-bold text-slate-900">Total Estimate</span>
-                  <span className="text-base font-bold text-amber-600">${(totalBudget + serviceFee).toFixed(2)}</span>
+                  <span className="text-base font-bold text-amber-600">${(totalBudget + serviceFee + totalVendorBudget).toFixed(2)}</span>
                 </div>
               </>
             )}

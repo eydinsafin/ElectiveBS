@@ -1,39 +1,42 @@
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, CalendarDays, Calendar, Users,
-  DollarSign, Building2, BarChart2, Settings, X, Moon, Sun,
+  DollarSign, Building2, BarChart2, Settings, X, Moon, Sun, Package, Lock, LogOut,
 } from 'lucide-react'
 import Avatar from './Avatar'
 import { useTheme } from '../context/ThemeContext'
 import { useToast } from '../context/ToastContext'
+import { useAuth } from '../context/AuthContext'
 import logo from '../assets/logo.png'
 
 const NAV = [
-  { label: 'Director View', icon: LayoutDashboard, path: '/director' },
+  { label: 'Director View', icon: LayoutDashboard, path: '/director', protected: true },
   { label: 'Agency Home',   icon: Building2,       path: '/' },
   { label: 'Schedule',      icon: Calendar,        path: '/schedule' },
   { label: 'Events',        icon: CalendarDays,    path: '/events' },
   { label: 'Staff',         icon: Users,           path: '/staff' },
+  { label: 'Vendors',       icon: Package,         path: '/vendors' },
   { label: 'Payroll',       icon: DollarSign,      path: '/payroll/PAY-2023-10-B' },
   { label: 'Reports',       icon: BarChart2,       path: '/reports' },
 ]
 
-interface Props {
-  open: boolean
-  onClose: () => void
-}
+interface Props { open: boolean; onClose: () => void }
 
 export default function Sidebar({ open, onClose }: Props) {
-  const navigate = useNavigate()
-  const { pathname } = useLocation()
+  const navigate        = useNavigate()
+  const { pathname }    = useLocation()
   const { theme, toggle } = useTheme()
-  const toast = useToast()
+  const toast           = useToast()
+  const { user, logout }  = useAuth()
 
   const isActive = (path: string) =>
     path === '/' ? pathname === '/' : pathname.startsWith(path)
 
-  const go = (path: string) => {
-    navigate(path)
+  const go = (path: string) => { navigate(path); onClose() }
+
+  const handleSignOut = () => {
+    logout()
+    navigate('/login')
     onClose()
   }
 
@@ -63,25 +66,31 @@ export default function Sidebar({ open, onClose }: Props) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest px-3 pb-3">Navigation</p>
-        {NAV.map(({ label, icon: Icon, path }) => (
-          <button
-            key={label}
-            onClick={() => go(path)}
-            className={`w-full flex items-center gap-3 px-3 py-3 lg:py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-              isActive(path)
-                ? 'bg-amber-500/10 text-amber-400'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
-            }`}
-          >
-            <Icon size={18} strokeWidth={isActive(path) ? 2.5 : 1.8} />
-            {label}
-          </button>
-        ))}
+        {NAV.map(({ label, icon: Icon, path, protected: isProtected }) => {
+          const locked  = isProtected && !user
+          const active  = isActive(path)
+          return (
+            <button
+              key={label}
+              onClick={() => go(path)}
+              className={`w-full flex items-center gap-3 px-3 py-3 lg:py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
+                active
+                  ? 'bg-amber-500/10 text-amber-400'
+                  : locked
+                  ? 'text-slate-600 hover:text-slate-400 hover:bg-white/5'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
+              <span className="flex-1">{label}</span>
+              {locked && <Lock size={12} className="text-slate-600 shrink-0" />}
+            </button>
+          )
+        })}
       </nav>
 
       {/* Bottom */}
       <div className="px-3 py-4 border-t border-white/5 shrink-0">
-        {/* Dark mode toggle */}
         <button
           onClick={toggle}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-white hover:bg-white/5 transition-colors mb-1"
@@ -97,13 +106,45 @@ export default function Sidebar({ open, onClose }: Props) {
           <Settings size={17} strokeWidth={1.8} />
           Settings
         </button>
-        <div className="flex items-center gap-3 px-3">
-          <Avatar name="Darren Ong Wei Kiat" size="sm" />
-          <div className="min-w-0 flex-1">
-            <p className="text-white text-sm font-medium truncate">Darren Ong Wei Kiat</p>
-            <p className="text-slate-500 text-xs">Director</p>
-          </div>
-        </div>
+
+        {user ? (
+          /* Authenticated director */
+          <>
+            <div className="flex items-center gap-3 px-3 mb-2">
+              <Avatar name={user.name} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="text-white text-sm font-medium truncate">{user.name}</p>
+                <p className="text-slate-500 text-xs truncate">{user.agency}</p>
+              </div>
+              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 shrink-0">DIR</span>
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-slate-500 hover:text-red-400 hover:bg-white/5 transition-colors"
+            >
+              <LogOut size={15} strokeWidth={1.8} />
+              Sign Out
+            </button>
+          </>
+        ) : (
+          /* Not authenticated */
+          <>
+            <div className="flex items-center gap-3 px-3 mb-2 opacity-40">
+              <Avatar name="Director" size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className="text-white text-sm font-medium">Not signed in</p>
+                <p className="text-slate-500 text-xs">Director access locked</p>
+              </div>
+            </div>
+            <button
+              onClick={() => go('/login')}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-amber-500 hover:text-amber-400 hover:bg-white/5 transition-colors"
+            >
+              <Lock size={15} strokeWidth={1.8} />
+              Sign In as Director
+            </button>
+          </>
+        )}
       </div>
     </aside>
   )

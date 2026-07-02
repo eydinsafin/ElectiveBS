@@ -176,8 +176,9 @@ export default function EventsPage() {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <button onClick={() => navigate(`/events/${ev.id}/staff`)} className="flex-1 sm:flex-none px-3 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors">Manage Staff</button>
+                <button onClick={() => navigate(`/events/${ev.id}/vendors`)} className="flex-1 sm:flex-none px-3 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors">Manage Vendors</button>
                 <button onClick={() => navigate(`/events/${ev.id}`)} className="flex-1 sm:flex-none px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 transition-colors">View Details</button>
               </div>
             </div>

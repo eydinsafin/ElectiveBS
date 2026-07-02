@@ -17,6 +17,25 @@ export type AssignedPerson = {
   unavailableDates?: string[]
 }
 
+export type VendorService = {
+  id: number
+  service: string
+  description: string
+  budget: number   // for 'service': organiser's budget; for 'participant': booth fee per vendor
+  count: number    // for 'service': vendors needed; for 'participant': max booth slots
+  type?: 'service' | 'participant'  // defaults to 'service'
+}
+
+export type AssignedVendor = {
+  id: string
+  company: string
+  contact: string
+  phone: string
+  service: string
+  tier: 'Premium' | 'Standard' | 'Budget'
+  quote: number
+}
+
 export const DEFAULT_STAFF_POOL: AssignedPerson[] = [
   { id: 'sp-1',  name: 'Lin Mei Xuan',          phone: '9123 4567', tier: 'Expert', unavailableDates: [] },
   { id: 'sp-2',  name: 'Marcus Low Wei Jie',   phone: '9234 5678', tier: 'Expert', unavailableDates: [] },
@@ -52,9 +71,25 @@ export const DEFAULT_STAFF_POOL: AssignedPerson[] = [
 // backward-compat alias
 export const STAFF_POOL = DEFAULT_STAFF_POOL
 
+export const VENDOR_POOL: AssignedVendor[] = [
+  { id: 'vp-1', company: 'Pro AV Solutions',     contact: 'Kevin Tan',   phone: '8111 2233', service: 'AV & Sound',    tier: 'Premium',  quote: 0 },
+  { id: 'vp-2', company: 'Fresh Catering Co.',   contact: 'Linda Ho',    phone: '8222 3344', service: 'Catering',      tier: 'Standard', quote: 0 },
+  { id: 'vp-3', company: 'Elite Security Group', contact: 'Marcus Reid', phone: '8333 4455', service: 'Security',      tier: 'Premium',  quote: 0 },
+  { id: 'vp-4', company: 'Bloom Floral Studio',  contact: 'Amy Chen',    phone: '8444 5566', service: 'Decoration',    tier: 'Standard', quote: 0 },
+  { id: 'vp-5', company: 'Click Photography',    contact: 'Jake Lim',    phone: '8555 6677', service: 'Photography',   tier: 'Premium',  quote: 0 },
+  { id: 'vp-6', company: 'FastTrack Logistics',  contact: 'Dan Park',    phone: '8666 7788', service: 'Logistics',     tier: 'Budget',   quote: 0 },
+  { id: 'vp-7', company: 'Spark Entertainment',  contact: 'Suki Tan',    phone: '8777 8899', service: 'Entertainment', tier: 'Standard', quote: 0 },
+  { id: 'vp-8', company: 'CleanPro Services',    contact: 'Roy Ng',      phone: '8888 9900', service: 'Cleaning',      tier: 'Budget',   quote: 0 },
+]
+
 const p = (id: string): AssignedPerson => {
   const found = DEFAULT_STAFF_POOL.find(s => s.id === id)!
   return { id: found.id, name: found.name, phone: found.phone, tier: found.tier }
+}
+
+const v = (id: string, quote: number): AssignedVendor => {
+  const found = VENDOR_POOL.find(vendor => vendor.id === id)!
+  return { ...found, quote }
 }
 
 export type AppEvent = {
@@ -70,6 +105,8 @@ export type AppEvent = {
   total: number
   createdAt: number
   assignments?: { [roleId: string]: AssignedPerson[] }
+  vendorServices?: VendorService[]
+  vendorAssignments?: { [serviceId: string]: AssignedVendor[] }
   notes?: string
 }
 
@@ -100,6 +137,16 @@ const SAMPLE_EVENTS: AppEvent[] = [
       '105': [],
     },
     notes: 'Client contact: Mr. Tan Wei Ming (+65 9111 2222). Dress code: all-black smart casual. VIP holding area on Level 4. Load-in from 06:00.',
+    vendorServices: [
+      { id: 1001, service: 'AV & Sound',  description: 'Full PA system, LED walls and professional lighting rig',  budget: 8000, count: 1 },
+      { id: 1002, service: 'Catering',    description: 'Cocktail reception and finger food for 300 guests',         budget: 5000, count: 1 },
+      { id: 1003, service: 'Photography', description: 'Full-day event photography and post-production',            budget: 2500, count: 1 },
+    ],
+    vendorAssignments: {
+      '1001': [v('vp-1', 7500)],
+      '1002': [v('vp-2', 4800)],
+      '1003': [],
+    },
   },
   {
     id: 'EVT-SG-002',
@@ -127,6 +174,24 @@ const SAMPLE_EVENTS: AppEvent[] = [
       '205': [],
     },
     notes: 'Outdoor event — tropical heat expected. All staff to bring personal water bottles. Rain contingency: booths move under Palawan Pitstop shelters. Client: Sentosa Development Corporation.',
+    vendorServices: [
+      { id: 2001, service: 'Entertainment',    description: 'Live band performances and DJ closing set',                             budget: 3500, count: 1  },
+      { id: 2002, service: 'Logistics',        description: 'Equipment transport, booth setup and teardown',                         budget: 2000, count: 1  },
+      { id: 2003, service: 'Security',         description: 'Crowd control, perimeter security and first aid support',               budget: 4000, count: 1  },
+      { id: 2004, service: 'F&B Vendor Booths', description: 'Restaurant & food brand pop-up stalls along Palawan Beach',           budget: 1500, count: 15, type: 'participant' as const },
+    ],
+    vendorAssignments: {
+      '2001': [v('vp-7', 3200)],
+      '2002': [],
+      '2003': [v('vp-3', 3800)],
+      '2004': [
+        { id: 'cv-s2-1', company: 'Bite Me SG',          contact: 'Alex Foo',          phone: '8123 4567', service: 'F&B Stall', tier: 'Standard' as const, quote: 1500 },
+        { id: 'cv-s2-2', company: 'The Ramen Bar',        contact: 'Yuki Tan',          phone: '8234 5678', service: 'F&B Stall', tier: 'Premium'  as const, quote: 1500 },
+        { id: 'cv-s2-3', company: 'Grillhouse Bros.',     contact: 'James Teo',         phone: '8345 6789', service: 'F&B Stall', tier: 'Standard' as const, quote: 1500 },
+        { id: 'cv-s2-4', company: 'Bubble Tea Express',   contact: 'Mei Lin',           phone: '8456 7890', service: 'F&B Stall', tier: 'Budget'   as const, quote: 1500 },
+        { id: 'cv-s2-5', company: "Mama's Kitchen",       contact: 'Rose Lim',          phone: '8567 8901', service: 'F&B Stall', tier: 'Budget'   as const, quote: 1500 },
+      ],
+    },
   },
   {
     id: 'EVT-SG-003',
@@ -154,6 +219,18 @@ const SAMPLE_EVENTS: AppEvent[] = [
       '305': [p('sp-5'), p('sp-4'), p('sp-2'), p('sp-3')],
     },
     notes: 'Keynote: Dr. Lim Boon Keng at 09:00. Media accreditation required for press area. All staff must wear lanyards at all times. No photography of slides without organiser approval. Client: SGTech.',
+    vendorServices: [
+      { id: 3001, service: 'AV & Sound',  description: 'Hybrid streaming setup, 4K projection and LED stage panels',              budget: 15000, count: 1 },
+      { id: 3002, service: 'Catering',    description: 'Buffet lunch and 2 coffee breaks for 400 delegates',                      budget: 8000,  count: 1 },
+      { id: 3003, service: 'Photography', description: 'Full-day coverage, speaker portraits and highlight reel edit',             budget: 4000,  count: 1 },
+      { id: 3004, service: 'Decoration',  description: 'Stage backdrop, networking lounge décor and floral arrangements',          budget: 3500,  count: 1 },
+    ],
+    vendorAssignments: {
+      '3001': [v('vp-1', 14000)],
+      '3002': [v('vp-2', 7800)],
+      '3003': [v('vp-5', 3800)],
+      '3004': [v('vp-4', 3200)],
+    },
   },
   {
     id: 'EVT-SG-004',
@@ -174,6 +251,23 @@ const SAMPLE_EVENTS: AppEvent[] = [
     createdAt: Date.now() - 86400000 * 2,
     assignments: {},
     notes: 'Night market festive theme. Smart casual attire allowed for promoters. Emcee must be bilingual (English + Mandarin). Client: Clarke Quay Merchants Association.',
+    vendorServices: [
+      { id: 4001, service: 'Street Food Stalls',        description: 'Local hawker favourites and street food vendors',              budget: 600,  count: 20, type: 'participant' as const },
+      { id: 4002, service: 'Retail & Artisan Booths',   description: 'Fashion, arts & crafts, lifestyle and collectible sellers',    budget: 450,  count: 15, type: 'participant' as const },
+      { id: 4003, service: 'AV & Stage',                description: 'PA system, stage lighting and LED backdrop for live acts',     budget: 4000, count: 1  },
+    ],
+    vendorAssignments: {
+      '4001': [
+        { id: 'cv-cq-1', company: 'Old School Hawker',    contact: 'Uncle Tan',        phone: '9111 2345', service: 'Street Food',   tier: 'Budget'   as const, quote: 600 },
+        { id: 'cv-cq-2', company: 'Fusion Street Co.',    contact: 'Ben Lee',           phone: '9222 3456', service: 'Street Food',   tier: 'Standard' as const, quote: 600 },
+        { id: 'cv-cq-3', company: 'Satay & Co.',          contact: 'Ahmad Zainal',      phone: '9333 4567', service: 'Street Food',   tier: 'Budget'   as const, quote: 600 },
+      ],
+      '4002': [
+        { id: 'cv-cq-4', company: 'Artisan Collective SG', contact: 'Claire Ng',       phone: '9444 5678', service: 'Retail Booth',  tier: 'Standard' as const, quote: 450 },
+        { id: 'cv-cq-5', company: 'The Vintage Trunk',    contact: 'Sam Goh',           phone: '9555 6789', service: 'Retail Booth',  tier: 'Standard' as const, quote: 450 },
+      ],
+      '4003': [],
+    },
   },
   {
     id: 'EVT-SG-005',
@@ -195,6 +289,12 @@ const SAMPLE_EVENTS: AppEvent[] = [
     createdAt: Date.now() - 86400000 * 1,
     assignments: {},
     notes: 'Black-tie event. Zero phone policy during dinner service — strict enforcement. 280 guests expected. Client: Singapore Business Federation. Floristry theme: tropical orchids.',
+    vendorServices: [
+      { id: 5001, service: 'Catering',    description: '3-course plated dinner with wine pairing for 280 guests',      budget: 18000, count: 1 },
+      { id: 5002, service: 'Decoration',  description: 'Tropical orchid floral centrepieces and stage arrangements',   budget: 6000,  count: 1 },
+      { id: 5003, service: 'Photography', description: 'Gala evening photography and same-day highlight video edit',   budget: 5000,  count: 1 },
+    ],
+    vendorAssignments: {},
   },
 ]
 
@@ -210,6 +310,9 @@ type Ctx = {
   removeFromRole: (eventId: string, roleId: number, personId: string) => void
   cloneEvent: (eventId: string) => void
   addStaffMember: (person: AssignedPerson) => void
+  updateEventVendorServices: (eventId: string, services: VendorService[]) => void
+  assignVendor: (eventId: string, serviceId: number, vendor: AssignedVendor) => void
+  removeVendor: (eventId: string, serviceId: number, vendorId: string) => void
   editStaffMember: (person: AssignedPerson) => void
   removeStaffMember: (personId: string) => void
 }
@@ -226,12 +329,15 @@ const EventsContext = createContext<Ctx>({
   addStaffMember: () => {},
   editStaffMember: () => {},
   removeStaffMember: () => {},
+  updateEventVendorServices: () => {},
+  assignVendor: () => {},
+  removeVendor: () => {},
 })
 
 const LS_KEY     = 'eventos_events'
 const LS_STAFF   = 'eventos_staff_pool'
 const LS_VERSION = 'eventos_version'
-const DATA_VER   = '4'
+const DATA_VER   = '6'
 
 function resetStorage() {
   localStorage.setItem(LS_VERSION, DATA_VER)
@@ -361,12 +467,53 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     setStaffPool(prev => { const next = prev.filter(p => p.id !== personId); saveStaff(next); return next })
   }
 
+  const updateEventVendorServices = (eventId: string, services: VendorService[]) => {
+    setEvents(prev => {
+      const next = prev.map(e => e.id !== eventId ? e : { ...e, vendorServices: services })
+      save(next)
+      return next
+    })
+  }
+
+  const assignVendor = (eventId: string, serviceId: number, vendor: AssignedVendor) => {
+    setEvents(prev => {
+      const next = prev.map(e => {
+        if (e.id !== eventId) return e
+        const key = serviceId.toString()
+        const existing = e.vendorAssignments?.[key] || []
+        if (existing.find(vn => vn.id === vendor.id)) return e
+        return { ...e, vendorAssignments: { ...(e.vendorAssignments || {}), [key]: [...existing, vendor] } }
+      })
+      save(next)
+      return next
+    })
+  }
+
+  const removeVendor = (eventId: string, serviceId: number, vendorId: string) => {
+    setEvents(prev => {
+      const next = prev.map(e => {
+        if (e.id !== eventId) return e
+        const key = serviceId.toString()
+        return {
+          ...e,
+          vendorAssignments: {
+            ...(e.vendorAssignments || {}),
+            [key]: (e.vendorAssignments?.[key] || []).filter(vn => vn.id !== vendorId),
+          },
+        }
+      })
+      save(next)
+      return next
+    })
+  }
+
   return (
     <EventsContext.Provider value={{
       events, staffPool,
       addEvent, updateEvent, updateEventRoles,
       assignToRole, removeFromRole, cloneEvent,
       addStaffMember, editStaffMember, removeStaffMember,
+      updateEventVendorServices, assignVendor, removeVendor,
     }}>
       {children}
     </EventsContext.Provider>
