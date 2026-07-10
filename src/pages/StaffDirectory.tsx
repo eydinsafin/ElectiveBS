@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, Pencil, Trash2, Check, X, UserPlus, CalendarX } from 'lucide-react'
+import { Search, Plus, Pencil, Trash2, Check, X, UserPlus, CalendarX, Globe, Loader2 } from 'lucide-react'
 import Avatar from '../components/Avatar'
 import { useEvents, AssignedPerson } from '../context/EventsContext'
 import { useToast } from '../context/ToastContext'
+import { supabase, type Profile } from '../lib/supabase'
 
 type Tier = 'Expert' | 'Senior' | 'Junior'
 
@@ -31,8 +32,14 @@ export default function StaffDirectory() {
   const [tab, setTab]           = useState<'All' | 'Available' | 'Assigned'>('All')
   const [search, setSearch]     = useState('')
   const [showAdd, setShowAdd]   = useState(false)
+  const [addPanel, setAddPanel] = useState<'manual' | 'eventoS'>('manual')
   const [addDraft, setAddDraft] = useState(emptyDraft())
   const [addDate, setAddDate]   = useState('')
+
+  // EventOS account search
+  const [eventosQ, setEventosQ]           = useState('')
+  const [eventosResults, setEventosResults] = useState<Profile[]>([])
+  const [eventosLoading, setEventosLoading] = useState(false)
 
   const [editingId, setEditingId]   = useState<string | null>(null)
   const [editDraft, setEditDraft]   = useState<AssignedPerson | null>(null)
@@ -84,6 +91,35 @@ export default function StaffDirectory() {
   const totalStaff = fullPool.length
   const onDuty     = rows.filter(r => r.status === 'On-Duty').length
   const available  = totalStaff - onDuty
+
+  // EventOS search
+  const searchEventOS = async (q: string) => {
+    if (!q.trim()) { setEventosResults([]); return }
+    setEventosLoading(true)
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'Staff')
+      .ilike('name', `%${q.trim()}%`)
+      .limit(15)
+    setEventosResults(data ?? [])
+    setEventosLoading(false)
+  }
+
+  const addFromEventOS = (profile: Profile) => {
+    if (fullPool.find(p => p.id === profile.id)) {
+      toast.show(`${profile.name} is already in the pool`, 'info')
+      return
+    }
+    addStaffMember({
+      id: profile.id,
+      name: profile.name,
+      phone: profile.phone || '',
+      tier: (profile.tier as Tier) || 'Junior',
+      unavailableDates: [],
+    })
+    toast.show(`${profile.name} added to staff pool`)
+  }
 
   // Add staff
   const handleAdd = () => {
@@ -161,82 +197,146 @@ export default function StaffDirectory() {
 
       {/* Add Staff Panel */}
       {showAdd && (
-        <div className="bg-white border border-slate-200 rounded-xl p-5 mb-5 shadow-sm">
-          <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2"><Plus size={15} className="text-amber-600" />Add New Staff Member</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
-            <div>
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Full Name *</label>
-              <input
-                type="text"
-                placeholder="e.g. John Tan"
-                value={addDraft.name}
-                onChange={e => setAddDraft(d => ({ ...d, name: e.target.value }))}
-                autoFocus
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Phone</label>
-              <input
-                type="tel"
-                placeholder="e.g. 9123 4567"
-                value={addDraft.phone}
-                onChange={e => setAddDraft(d => ({ ...d, phone: e.target.value }))}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors"
-              />
-            </div>
-            <div>
-              <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Tier</label>
-              <select
-                value={addDraft.tier}
-                onChange={e => setAddDraft(d => ({ ...d, tier: e.target.value as Tier }))}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors"
-              >
-                <option value="Junior">Junior</option>
-                <option value="Senior">Senior</option>
-                <option value="Expert">Expert</option>
-              </select>
-            </div>
+        <div className="bg-white border border-slate-200 rounded-xl mb-5 shadow-sm overflow-hidden">
+          {/* Tabs */}
+          <div className="flex border-b border-slate-200">
+            <button
+              onClick={() => setAddPanel('manual')}
+              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold border-b-2 transition-colors ${addPanel === 'manual' ? 'border-amber-500 text-amber-700 bg-amber-50/40' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              <Plus size={14} /> Add Manually
+            </button>
+            <button
+              onClick={() => setAddPanel('eventoS')}
+              className={`flex items-center gap-2 px-5 py-3.5 text-sm font-semibold border-b-2 transition-colors ${addPanel === 'eventoS' ? 'border-blue-500 text-blue-700 bg-blue-50/40' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+            >
+              <Globe size={14} /> EventOS Accounts
+            </button>
+            <button
+              onClick={() => { setShowAdd(false); setAddDraft(emptyDraft()); setAddDate(''); setEventosQ(''); setEventosResults([]) }}
+              className="ml-auto px-4 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X size={15} />
+            </button>
           </div>
 
-          {/* Unavailable dates */}
-          <div className="mb-4">
-            <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1 block">
-              <CalendarX size={11} />Unavailable Dates
-            </label>
-            <div className="flex gap-2 mb-2">
-              <input
-                type="date"
-                value={addDate}
-                onChange={e => setAddDate(e.target.value)}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-amber-400 transition-colors"
-              />
-              <button
-                onClick={() => addUnavailableDate(addDate, addDraft.unavailableDates || [], d => setAddDraft(p => ({ ...p, unavailableDates: d })), setAddDate)}
-                className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-200 transition-colors"
-              >
-                Block date
-              </button>
-            </div>
-            {(addDraft.unavailableDates || []).length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {(addDraft.unavailableDates || []).map(d => (
-                  <span key={d} className="flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-700 rounded text-xs font-medium border border-red-100">
-                    {d}
-                    <button onClick={() => setAddDraft(p => ({ ...p, unavailableDates: (p.unavailableDates || []).filter(x => x !== d) }))}><X size={10} /></button>
-                  </span>
-                ))}
-              </div>
+          <div className="p-5">
+            {/* ── Manual tab ───────────────────────────────────── */}
+            {addPanel === 'manual' && (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Full Name *</label>
+                    <input type="text" placeholder="e.g. John Tan" value={addDraft.name}
+                      onChange={e => setAddDraft(d => ({ ...d, name: e.target.value }))} autoFocus
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Phone</label>
+                    <input type="tel" placeholder="e.g. 9123 4567" value={addDraft.phone}
+                      onChange={e => setAddDraft(d => ({ ...d, phone: e.target.value }))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors" />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1 block">Tier</label>
+                    <select value={addDraft.tier} onChange={e => setAddDraft(d => ({ ...d, tier: e.target.value as Tier }))}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors">
+                      <option value="Junior">Junior</option>
+                      <option value="Senior">Senior</option>
+                      <option value="Expert">Expert</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mb-4">
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1 block">
+                    <CalendarX size={11} />Unavailable Dates
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input type="date" value={addDate} onChange={e => setAddDate(e.target.value)}
+                      className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:border-amber-400 transition-colors" />
+                    <button onClick={() => addUnavailableDate(addDate, addDraft.unavailableDates || [], d => setAddDraft(p => ({ ...p, unavailableDates: d })), setAddDate)}
+                      className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-200 transition-colors">
+                      Block date
+                    </button>
+                  </div>
+                  {(addDraft.unavailableDates || []).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {(addDraft.unavailableDates || []).map(d => (
+                        <span key={d} className="flex items-center gap-1 px-2 py-0.5 bg-red-50 text-red-700 rounded text-xs font-medium border border-red-100">
+                          {d}
+                          <button onClick={() => setAddDraft(p => ({ ...p, unavailableDates: (p.unavailableDates || []).filter(x => x !== d) }))}><X size={10} /></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button onClick={handleAdd} disabled={!addDraft.name.trim()}
+                  className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 disabled:opacity-40 transition-colors">
+                  Add to Pool
+                </button>
+              </>
             )}
-          </div>
 
-          <div className="flex gap-2">
-            <button onClick={handleAdd} disabled={!addDraft.name.trim()} className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-semibold hover:bg-amber-700 disabled:opacity-40 transition-colors">
-              Add to Pool
-            </button>
-            <button onClick={() => { setShowAdd(false); setAddDraft(emptyDraft()); setAddDate('') }} className="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-colors">
-              Cancel
-            </button>
+            {/* ── EventOS Accounts tab ─────────────────────────── */}
+            {addPanel === 'eventoS' && (
+              <>
+                <p className="text-sm text-slate-500 mb-4">Search staff who have created an EventOS account and add them to your pool.</p>
+                <div className="relative mb-4">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input type="text" placeholder="Search by name..." value={eventosQ} autoFocus
+                    onChange={e => { setEventosQ(e.target.value); searchEventOS(e.target.value) }}
+                    className="pl-9 pr-3 py-2.5 w-full border border-slate-200 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-50 transition-colors" />
+                </div>
+
+                {eventosLoading && (
+                  <div className="flex items-center gap-2 text-slate-400 text-sm py-4 justify-center">
+                    <Loader2 size={15} className="animate-spin" /> Searching EventOS...
+                  </div>
+                )}
+
+                {!eventosLoading && eventosResults.length > 0 && (
+                  <div className="space-y-2">
+                    {eventosResults.map(profile => {
+                      const inPool = !!fullPool.find(p => p.id === profile.id)
+                      return (
+                        <div key={profile.id} className="flex items-center gap-3 p-3 border border-slate-100 rounded-xl hover:bg-slate-50 transition-colors">
+                          <Avatar name={profile.name} size="sm" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-slate-900 truncate">{profile.name}</p>
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-600 shrink-0">EVENTOS</span>
+                            </div>
+                            <p className="text-xs text-slate-400">{profile.phone || profile.email}</p>
+                          </div>
+                          {profile.tier && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                              profile.tier === 'Expert' ? 'bg-amber-100 text-amber-700' :
+                              profile.tier === 'Senior' ? 'bg-blue-100 text-blue-700' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>{profile.tier}</span>
+                          )}
+                          <button
+                            onClick={() => addFromEventOS(profile)}
+                            disabled={inPool}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-500"
+                          >
+                            {inPool ? 'In Pool ✓' : 'Add to Pool'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {!eventosLoading && eventosQ && eventosResults.length === 0 && (
+                  <p className="text-sm text-slate-400 text-center py-6">No registered EventOS staff found for "{eventosQ}"</p>
+                )}
+
+                {!eventosQ && (
+                  <p className="text-sm text-slate-400 text-center py-6">Start typing to search registered staff accounts</p>
+                )}
+              </>
+            )}
           </div>
         </div>
       )}

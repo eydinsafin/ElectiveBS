@@ -105,6 +105,7 @@ export type AppEvent = {
   total: number
   createdAt: number
   assignments?: { [roleId: string]: AssignedPerson[] }
+  attendance?: { [personId: string]: string }   // personId → ISO check-in timestamp
   vendorServices?: VendorService[]
   vendorAssignments?: { [serviceId: string]: AssignedVendor[] }
   notes?: string
@@ -303,6 +304,7 @@ type EventPatch = Partial<Pick<AppEvent, 'name' | 'date' | 'from' | 'to' | 'loca
 type Ctx = {
   events: AppEvent[]
   staffPool: AssignedPerson[]
+  vendorPool: AssignedVendor[]
   addEvent: (e: AppEvent) => void
   updateEvent: (eventId: string, patch: EventPatch) => void
   updateEventRoles: (eventId: string, roles: StaffRole[]) => void
@@ -310,16 +312,20 @@ type Ctx = {
   removeFromRole: (eventId: string, roleId: number, personId: string) => void
   cloneEvent: (eventId: string) => void
   addStaffMember: (person: AssignedPerson) => void
+  editStaffMember: (person: AssignedPerson) => void
+  removeStaffMember: (personId: string) => void
+  addVendorToPool: (vendor: AssignedVendor) => void
   updateEventVendorServices: (eventId: string, services: VendorService[]) => void
   assignVendor: (eventId: string, serviceId: number, vendor: AssignedVendor) => void
   removeVendor: (eventId: string, serviceId: number, vendorId: string) => void
-  editStaffMember: (person: AssignedPerson) => void
-  removeStaffMember: (personId: string) => void
+  checkIn: (eventId: string, personId: string) => void
+  checkOut: (eventId: string, personId: string) => void
 }
 
 const EventsContext = createContext<Ctx>({
   events: [],
   staffPool: [],
+  vendorPool: [],
   addEvent: () => {},
   updateEvent: () => {},
   updateEventRoles: () => {},
@@ -329,15 +335,19 @@ const EventsContext = createContext<Ctx>({
   addStaffMember: () => {},
   editStaffMember: () => {},
   removeStaffMember: () => {},
+  addVendorToPool: () => {},
   updateEventVendorServices: () => {},
   assignVendor: () => {},
   removeVendor: () => {},
+  checkIn: () => {},
+  checkOut: () => {},
 })
 
-const LS_KEY     = 'eventos_events'
-const LS_STAFF   = 'eventos_staff_pool'
-const LS_VERSION = 'eventos_version'
-const DATA_VER   = '6'
+const LS_KEY         = 'eventos_events'
+const LS_STAFF       = 'eventos_staff_pool'
+const LS_VENDOR_EXTRA = 'eventos_vendor_pool_extra'
+const LS_VERSION     = 'eventos_version'
+const DATA_VER       = '6'
 
 function resetStorage() {
   localStorage.setItem(LS_VERSION, DATA_VER)
@@ -370,6 +380,15 @@ function saveStaff(pool: AssignedPerson[]) {
   localStorage.setItem(LS_STAFF, JSON.stringify(pool))
 }
 
+function loadVendorExtra(): AssignedVendor[] {
+  try { const r = localStorage.getItem(LS_VENDOR_EXTRA); return r ? JSON.parse(r) : [] }
+  catch { return [] }
+}
+
+function saveVendorExtra(pool: AssignedVendor[]) {
+  localStorage.setItem(LS_VENDOR_EXTRA, JSON.stringify(pool))
+}
+
 function computeStatus(filled: number, total: number): AppEvent['status'] {
   if (total === 0) return 'Planning'
   const pct = filled / total
@@ -380,8 +399,20 @@ function computeStatus(filled: number, total: number): AppEvent['status'] {
 }
 
 export function EventsProvider({ children }: { children: ReactNode }) {
-  const [events, setEvents]       = useState<AppEvent[]>(load)
-  const [staffPool, setStaffPool] = useState<AssignedPerson[]>(loadStaff)
+  const [events, setEvents]           = useState<AppEvent[]>(load)
+  const [staffPool, setStaffPool]     = useState<AssignedPerson[]>(loadStaff)
+  const [vendorExtra, setVendorExtra] = useState<AssignedVendor[]>(loadVendorExtra)
+
+  const vendorPool: AssignedVendor[] = [...VENDOR_POOL, ...vendorExtra]
+
+  const addVendorToPool = (vendor: AssignedVendor) => {
+    setVendorExtra(prev => {
+      if (prev.some(v => v.id === vendor.id)) return prev
+      const next = [...prev, vendor]
+      saveVendorExtra(next)
+      return next
+    })
+  }
 
   const addEvent = (e: AppEvent) => {
     setEvents(prev => { const next = [...prev, e]; save(next); return next })
@@ -507,13 +538,39 @@ export function EventsProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const checkIn = (eventId: string, personId: string) => {
+    setEvents(prev => {
+      const next = prev.map(e => {
+        if (e.id !== eventId) return e
+        return { ...e, attendance: { ...(e.attendance || {}), [personId]: new Date().toISOString() } }
+      })
+      save(next)
+      return next
+    })
+  }
+
+  const checkOut = (eventId: string, personId: string) => {
+    setEvents(prev => {
+      const next = prev.map(e => {
+        if (e.id !== eventId) return e
+        const attendance = { ...(e.attendance || {}) }
+        delete attendance[personId]
+        return { ...e, attendance }
+      })
+      save(next)
+      return next
+    })
+  }
+
   return (
     <EventsContext.Provider value={{
-      events, staffPool,
+      events, staffPool, vendorPool,
       addEvent, updateEvent, updateEventRoles,
       assignToRole, removeFromRole, cloneEvent,
       addStaffMember, editStaffMember, removeStaffMember,
+      addVendorToPool,
       updateEventVendorServices, assignVendor, removeVendor,
+      checkIn, checkOut,
     }}>
       {children}
     </EventsContext.Provider>

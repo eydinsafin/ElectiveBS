@@ -2,6 +2,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, CalendarDays, Calendar, Users,
   DollarSign, Building2, BarChart2, Settings, X, Moon, Sun, Package, Lock, LogOut,
+  CheckSquare, TrendingUp,
 } from 'lucide-react'
 import Avatar from './Avatar'
 import { useTheme } from '../context/ThemeContext'
@@ -9,7 +10,7 @@ import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
 import logo from '../assets/logo.png'
 
-const NAV = [
+const DIRECTOR_NAV = [
   { label: 'Director View', icon: LayoutDashboard, path: '/director', protected: true },
   { label: 'Agency Home',   icon: Building2,       path: '/' },
   { label: 'Schedule',      icon: Calendar,        path: '/schedule' },
@@ -20,22 +21,42 @@ const NAV = [
   { label: 'Reports',       icon: BarChart2,       path: '/reports' },
 ]
 
+const STAFF_NAV = [
+  { label: 'Overview',    icon: LayoutDashboard, path: '/portal/staff',                   protected: false },
+  { label: 'My Events',   icon: CalendarDays,    path: '/portal/staff?tab=events',        protected: false },
+  { label: 'Schedule',    icon: Calendar,        path: '/portal/staff?tab=schedule',      protected: false },
+  { label: 'Attendance',  icon: CheckSquare,     path: '/portal/staff?tab=attendance',    protected: false },
+]
+
+const VENDOR_NAV = [
+  { label: 'Overview',    icon: LayoutDashboard, path: '/portal/vendor',                  protected: false },
+  { label: 'My Bookings', icon: CalendarDays,    path: '/portal/vendor?tab=bookings',     protected: false },
+  { label: 'Schedule',    icon: Calendar,        path: '/portal/vendor?tab=schedule',     protected: false },
+  { label: 'Revenue',     icon: TrendingUp,      path: '/portal/vendor?tab=revenue',      protected: false },
+]
+
 interface Props { open: boolean; onClose: () => void }
 
 export default function Sidebar({ open, onClose }: Props) {
-  const navigate        = useNavigate()
-  const { pathname }    = useLocation()
-  const { theme, toggle } = useTheme()
-  const toast           = useToast()
-  const { user, logout }  = useAuth()
+  const navigate                = useNavigate()
+  const { pathname, search }    = useLocation()
+  const { theme, toggle }       = useTheme()
+  const toast                   = useToast()
+  const { user, logout }        = useAuth()
 
-  const isActive = (path: string) =>
-    path === '/' ? pathname === '/' : pathname.startsWith(path)
+  const isActive = (path: string) => {
+    if (path.includes('?')) {
+      const [navPath, navQuery] = path.split('?')
+      return pathname === navPath && search === `?${navQuery}`
+    }
+    if (path.startsWith('/portal/')) return pathname === path && !search
+    return path === '/' ? pathname === '/' : pathname.startsWith(path)
+  }
 
   const go = (path: string) => { navigate(path); onClose() }
 
-  const handleSignOut = () => {
-    logout()
+  const handleSignOut = async () => {
+    await logout()
     navigate('/login')
     onClose()
   }
@@ -66,7 +87,7 @@ export default function Sidebar({ open, onClose }: Props) {
       {/* Nav */}
       <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest px-3 pb-3">Navigation</p>
-        {NAV.map(({ label, icon: Icon, path, protected: isProtected }) => {
+        {(user?.role === 'Staff' ? STAFF_NAV : user?.role === 'Vendor' ? VENDOR_NAV : DIRECTOR_NAV).map(({ label, icon: Icon, path, protected: isProtected }) => {
           const locked  = isProtected && !user
           const active  = isActive(path)
           return (
@@ -108,15 +129,25 @@ export default function Sidebar({ open, onClose }: Props) {
         </button>
 
         {user ? (
-          /* Authenticated director */
+          /* Authenticated user */
           <>
             <div className="flex items-center gap-3 px-3 mb-2">
               <Avatar name={user.name} size="sm" />
               <div className="min-w-0 flex-1">
                 <p className="text-white text-sm font-medium truncate">{user.name}</p>
-                <p className="text-slate-500 text-xs truncate">{user.agency}</p>
+                <p className="text-slate-500 text-xs truncate">
+                  {user.role === 'Director' ? user.agency :
+                   user.role === 'Staff'    ? user.tier   :
+                                             user.company ?? 'Vendor'}
+                </p>
               </div>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 shrink-0">DIR</span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                user.role === 'Director' ? 'bg-amber-500/15 text-amber-400' :
+                user.role === 'Staff'    ? 'bg-blue-500/15 text-blue-400'   :
+                                          'bg-emerald-500/15 text-emerald-400'
+              }`}>
+                {user.role === 'Director' ? 'DIR' : user.role === 'Staff' ? 'STAFF' : 'VND'}
+              </span>
             </div>
             <button
               onClick={handleSignOut}

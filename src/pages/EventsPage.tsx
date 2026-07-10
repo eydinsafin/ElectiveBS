@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, ChevronDown, MapPin, Clock, Users, Calendar, Sparkles, Search, Copy } from 'lucide-react'
+import { Plus, ChevronDown, MapPin, Clock, Users, Calendar, Sparkles, Search, Copy, CheckSquare } from 'lucide-react'
 import { useEvents, fmtDate, fmtTime, STATUS_BADGE, PROGRESS_BAR } from '../context/EventsContext'
 import { useToast } from '../context/ToastContext'
 
@@ -179,6 +179,9 @@ export default function EventsPage() {
               <div className="flex gap-2 flex-wrap">
                 <button onClick={() => navigate(`/events/${ev.id}/staff`)} className="flex-1 sm:flex-none px-3 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors">Manage Staff</button>
                 <button onClick={() => navigate(`/events/${ev.id}/vendors`)} className="flex-1 sm:flex-none px-3 py-2 border border-slate-200 bg-white text-slate-700 rounded-lg text-xs font-semibold hover:bg-slate-50 transition-colors">Manage Vendors</button>
+                <button onClick={() => navigate(`/events/${ev.id}/attendance`)} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 border border-emerald-200 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-semibold hover:bg-emerald-100 transition-colors">
+                  <CheckSquare size={12} />Attendance
+                </button>
                 <button onClick={() => navigate(`/events/${ev.id}`)} className="flex-1 sm:flex-none px-3 py-2 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 transition-colors">View Details</button>
               </div>
             </div>

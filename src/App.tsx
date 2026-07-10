@@ -17,11 +17,28 @@ import StaffDirectory from './pages/StaffDirectory'
 import StaffManagement from './pages/StaffManagement'
 import VendorManagement from './pages/VendorManagement'
 import VendorDirectory from './pages/VendorDirectory'
+import Attendance from './pages/Attendance'
 import ReportsAnalytics from './pages/ReportsAnalytics'
+import StaffPortal from './pages/StaffPortal'
+import VendorPortal from './pages/VendorPortal'
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   return user ? <>{children}</> : <Navigate to="/login" replace />
+}
+
+function RequireRole({ role, children }: { role: 'Staff' | 'Vendor'; children: ReactNode }) {
+  const { user } = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (user.role !== role) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
+function HomeRedirect() {
+  const { user } = useAuth()
+  if (user?.role === 'Staff')  return <Navigate to="/portal/staff"  replace />
+  if (user?.role === 'Vendor') return <Navigate to="/portal/vendor" replace />
+  return <AgencyDashboard />
 }
 
 export default function App() {
@@ -39,14 +56,17 @@ export default function App() {
           <Route path="/*" element={
             <Layout>
               <Routes>
-                <Route path="/"        element={<AgencyDashboard />} />
+                <Route path="/"        element={<HomeRedirect />} />
+                <Route path="/portal/staff"   element={<RequireRole role="Staff"><StaffPortal /></RequireRole>} />
+                <Route path="/portal/vendor"  element={<RequireRole role="Vendor"><VendorPortal /></RequireRole>} />
                 <Route path="/director" element={<RequireAuth><DirectorDashboard /></RequireAuth>} />
                 <Route path="/schedule" element={<ScheduleOverview />} />
                 <Route path="/events"   element={<EventsPage />} />
                 <Route path="/events/create"       element={<CreateEvent />} />
                 <Route path="/events/:id"          element={<EventDetails />} />
-                <Route path="/events/:id/staff"    element={<StaffManagement />} />
+                <Route path="/events/:id/staff"      element={<StaffManagement />} />
                 <Route path="/events/:id/vendors"  element={<VendorManagement />} />
+                <Route path="/events/:id/attendance" element={<Attendance />} />
                 <Route path="/staff"   element={<StaffDirectory />} />
                 <Route path="/vendors" element={<VendorDirectory />} />
                 <Route path="/payroll/:id" element={<PayrollProcessing />} />

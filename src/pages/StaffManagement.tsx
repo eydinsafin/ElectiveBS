@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Users, Search, Plus, X, UserPlus, MapPin, Clock, Calendar, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Users, Search, Plus, X, UserPlus, MapPin, Clock, Calendar, AlertTriangle, Globe, Loader2 } from 'lucide-react'
 import Avatar from '../components/Avatar'
 import {
   useEvents, AssignedPerson,
   fmtDate, fmtTime, STATUS_BADGE, PROGRESS_BAR,
 } from '../context/EventsContext'
 import { useToast } from '../context/ToastContext'
+import { supabase, type Profile } from '../lib/supabase'
 
 type Tier = 'Expert' | 'Senior' | 'Junior'
 
@@ -24,11 +25,15 @@ export default function StaffManagement() {
 
   const event = events.find(e => e.id === id)
 
-  const [addingRoleId, setAddingRoleId] = useState<number | null>(null)
-  const [search, setSearch]             = useState('')
-  const [newName, setNewName]           = useState('')
-  const [newPhone, setNewPhone]         = useState('')
-  const [newTier, setNewTier]           = useState<Tier>('Junior')
+  const [addingRoleId, setAddingRoleId]   = useState<number | null>(null)
+  const [addTab, setAddTab]               = useState<'pool' | 'eventoS' | 'new'>('pool')
+  const [search, setSearch]               = useState('')
+  const [eventosSearch, setEventosSearch] = useState('')
+  const [eventosResults, setEventosResults] = useState<Profile[]>([])
+  const [eventosLoading, setEventosLoading] = useState(false)
+  const [newName, setNewName]             = useState('')
+  const [newPhone, setNewPhone]           = useState('')
+  const [newTier, setNewTier]             = useState<Tier>('Junior')
 
   if (!event) {
     return (
@@ -55,9 +60,25 @@ export default function StaffManagement() {
       .filter(p => !search || p.name.toLowerCase().includes(search.toLowerCase()))
   }
 
+  const searchEventOS = async (q: string) => {
+    if (!q.trim()) { setEventosResults([]); return }
+    setEventosLoading(true)
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'Staff')
+      .ilike('name', `%${q.trim()}%`)
+      .limit(10)
+    setEventosResults(data ?? [])
+    setEventosLoading(false)
+  }
+
   const openAdd = (roleId: number) => {
     setAddingRoleId(roleId)
+    setAddTab('pool')
     setSearch('')
+    setEventosSearch('')
+    setEventosResults([])
     setNewName('')
     setNewPhone('')
     setNewTier('Junior')
@@ -66,6 +87,8 @@ export default function StaffManagement() {
   const closeAdd = () => {
     setAddingRoleId(null)
     setSearch('')
+    setEventosSearch('')
+    setEventosResults([])
     setNewName('')
     setNewPhone('')
   }
@@ -208,98 +231,140 @@ export default function StaffManagement() {
 
                 {/* Add panel */}
                 {isAdding && (
-                  <div className="border border-slate-200 rounded-xl p-4 mb-3 bg-slate-50">
-                    {/* Search pool */}
-                    <div className="relative mb-3">
-                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="Search available staff..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="pl-9 pr-3 py-2 w-full border border-slate-200 bg-white rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors"
-                        autoFocus
-                      />
-                    </div>
-
-                    {pool.length > 0 ? (
-                      <div className="mb-4">
-                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Available Pool</p>
-                        <div className="space-y-1 max-h-48 overflow-y-auto">
-                          {pool.map(p => {
-                            const unavail = isUnavailable(p)
-                            return (
-                              <div key={p.id} className={`flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-white transition-colors ${unavail ? 'opacity-75' : ''}`}>
-                                <Avatar name={p.name} size="sm" />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-1.5">
-                                    <p className="text-sm font-semibold text-slate-900 truncate">{p.name}</p>
-                                    {unavail && (
-                                      <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded whitespace-nowrap">
-                                        <AlertTriangle size={9} />Unavailable
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-slate-400">{p.phone}</p>
-                                </div>
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${TIER_BADGE[p.tier]}`}>{p.tier}</span>
-                                <button
-                                  onClick={() => { assignToRole(event.id, sr.id, p); toast.show(`${p.name} assigned to ${sr.role}`) }}
-                                  className="px-2.5 py-1 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 shrink-0 transition-colors"
-                                >
-                                  Add
-                                </button>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      search && <p className="text-xs text-slate-400 text-center py-2 mb-3">No matching staff found</p>
-                    )}
-
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="flex-1 h-px bg-slate-200" />
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">Or Add New</span>
-                      <div className="flex-1 h-px bg-slate-200" />
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          placeholder="Full name *"
-                          value={newName}
-                          onChange={e => setNewName(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && handleAddNew(sr.id)}
-                          className="px-3 py-2 border border-slate-200 bg-white rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors"
-                        />
-                        <input
-                          type="tel"
-                          placeholder="Phone (optional)"
-                          value={newPhone}
-                          onChange={e => setNewPhone(e.target.value)}
-                          className="px-3 py-2 border border-slate-200 bg-white rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={newTier}
-                          onChange={e => setNewTier(e.target.value as Tier)}
-                          className="flex-1 px-3 py-2 border border-slate-200 bg-white rounded-lg text-sm text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors"
-                        >
-                          <option value="Junior">Junior</option>
-                          <option value="Senior">Senior</option>
-                          <option value="Expert">Expert</option>
-                        </select>
-                        <button
-                          onClick={() => handleAddNew(sr.id)}
-                          disabled={!newName.trim()}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        >
-                          <UserPlus size={14} />Add to Role
+                  <div className="border border-slate-200 rounded-xl mb-3 bg-slate-50 overflow-hidden">
+                    {/* Tabs */}
+                    <div className="flex border-b border-slate-200 bg-white">
+                      {([
+                        { key: 'pool',    label: 'Staff Pool' },
+                        { key: 'eventoS', label: 'EventOS Accounts' },
+                        { key: 'new',     label: 'Add Manually' },
+                      ] as { key: 'pool'|'eventoS'|'new'; label: string }[]).map(({ key, label }) => (
+                        <button key={key} onClick={() => setAddTab(key)}
+                          className={`flex-1 py-2.5 text-xs font-semibold transition-colors border-b-2 ${addTab === key ? 'border-amber-500 text-amber-700 bg-amber-50/50' : 'border-transparent text-slate-500 hover:text-slate-700'}`}>
+                          {key === 'eventoS' && <Globe size={10} className="inline mr-1" />}{label}
                         </button>
-                      </div>
+                      ))}
+                    </div>
+
+                    <div className="p-4">
+                      {/* ── Pool tab ─────────────────────────────────── */}
+                      {addTab === 'pool' && (
+                        <>
+                          <div className="relative mb-3">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input type="text" placeholder="Search staff pool..." value={search}
+                              onChange={e => setSearch(e.target.value)} autoFocus
+                              className="pl-9 pr-3 py-2 w-full border border-slate-200 bg-white rounded-lg text-sm placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors" />
+                          </div>
+                          {pool.length > 0 ? (
+                            <div className="space-y-1 max-h-52 overflow-y-auto">
+                              {pool.map(p => {
+                                const unavail = isUnavailable(p)
+                                return (
+                                  <div key={p.id} className={`flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-white transition-colors ${unavail ? 'opacity-75' : ''}`}>
+                                    <Avatar name={p.name} size="sm" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <p className="text-sm font-semibold text-slate-900 truncate">{p.name}</p>
+                                        {unavail && <span className="flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded whitespace-nowrap"><AlertTriangle size={9} />Unavailable</span>}
+                                      </div>
+                                      <p className="text-xs text-slate-400">{p.phone}</p>
+                                    </div>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${TIER_BADGE[p.tier]}`}>{p.tier}</span>
+                                    <button onClick={() => { assignToRole(event.id, sr.id, p); toast.show(`${p.name} assigned to ${sr.role}`) }}
+                                      className="px-2.5 py-1 bg-amber-600 text-white rounded-lg text-xs font-semibold hover:bg-amber-700 shrink-0 transition-colors">
+                                      Add
+                                    </button>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-xs text-slate-400 text-center py-3">
+                              {search ? 'No matching staff in pool' : 'All pool staff already assigned'}
+                            </p>
+                          )}
+                        </>
+                      )}
+
+                      {/* ── EventOS Accounts tab ─────────────────────── */}
+                      {addTab === 'eventoS' && (
+                        <>
+                          <div className="relative mb-3">
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input type="text" placeholder="Search by name..." value={eventosSearch} autoFocus
+                              onChange={e => { setEventosSearch(e.target.value); searchEventOS(e.target.value) }}
+                              className="pl-9 pr-3 py-2 w-full border border-slate-200 bg-white rounded-lg text-sm placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors" />
+                          </div>
+                          {eventosLoading && (
+                            <div className="flex items-center justify-center py-4 gap-2 text-slate-400 text-sm">
+                              <Loader2 size={14} className="animate-spin" /> Searching...
+                            </div>
+                          )}
+                          {!eventosLoading && eventosResults.length > 0 && (
+                            <div className="space-y-1 max-h-52 overflow-y-auto">
+                              {eventosResults.map(profile => {
+                                const alreadyAssigned = getRoleAssigned(sr.id).find(a => a.id === profile.id)
+                                return (
+                                  <div key={profile.id} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-white transition-colors">
+                                    <Avatar name={profile.name} size="sm" />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-1.5">
+                                        <p className="text-sm font-semibold text-slate-900 truncate">{profile.name}</p>
+                                        <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-600">EVENTOS</span>
+                                      </div>
+                                      <p className="text-xs text-slate-400">{profile.phone || profile.email}</p>
+                                    </div>
+                                    {profile.tier && <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${TIER_BADGE[profile.tier as Tier]}`}>{profile.tier}</span>}
+                                    <button
+                                      disabled={!!alreadyAssigned}
+                                      onClick={() => {
+                                        const person: AssignedPerson = { id: profile.id, name: profile.name, phone: profile.phone || '', tier: (profile.tier as Tier) || 'Junior' }
+                                        assignToRole(event.id, sr.id, person)
+                                        toast.show(`${profile.name} assigned to ${sr.role}`)
+                                      }}
+                                      className="px-2.5 py-1 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                                      {alreadyAssigned ? 'Added ✓' : 'Add'}
+                                    </button>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          )}
+                          {!eventosLoading && eventosSearch && eventosResults.length === 0 && (
+                            <p className="text-xs text-slate-400 text-center py-3">No registered staff found for "{eventosSearch}"</p>
+                          )}
+                          {!eventosSearch && (
+                            <p className="text-xs text-slate-400 text-center py-3">Type a name to search registered EventOS staff accounts</p>
+                          )}
+                        </>
+                      )}
+
+                      {/* ── Add Manually tab ─────────────────────────── */}
+                      {addTab === 'new' && (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            <input type="text" placeholder="Full name *" value={newName}
+                              onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddNew(sr.id)}
+                              className="px-3 py-2 border border-slate-200 bg-white rounded-lg text-sm placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors" />
+                            <input type="tel" placeholder="Phone (optional)" value={newPhone}
+                              onChange={e => setNewPhone(e.target.value)}
+                              className="px-3 py-2 border border-slate-200 bg-white rounded-lg text-sm placeholder:text-slate-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors" />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select value={newTier} onChange={e => setNewTier(e.target.value as Tier)}
+                              className="flex-1 px-3 py-2 border border-slate-200 bg-white rounded-lg text-sm focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-50 transition-colors">
+                              <option value="Junior">Junior</option>
+                              <option value="Senior">Senior</option>
+                              <option value="Expert">Expert</option>
+                            </select>
+                            <button onClick={() => handleAddNew(sr.id)} disabled={!newName.trim()}
+                              className="flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-lg text-sm font-semibold hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                              <UserPlus size={14} />Add to Role
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
